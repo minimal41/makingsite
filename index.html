@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>かんたんサイトビルダー</title>
+<title>作ったサイト一覧</title>
 <style>
   :root{
     --shell-bg: #17151f;
@@ -13,111 +13,48 @@
     --text: #e9e6f2;
     --text-dim: #9d97b5;
     --accent: #f2a65a;
-    --accent-dim: #7a5a34;
-    --paper: #ffffff;
     --danger: #e2635a;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;height:100%;background:var(--shell-bg);color:var(--text);}
-  body{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+  html,body{margin:0;min-height:100%;background:var(--shell-bg);color:var(--text);}
+  body{padding:0;}
 
-  /* Top bar */
   .topbar{
     display:flex;align-items:center;justify-content:space-between;
-    padding:10px 18px;background:var(--panel-bg);border-bottom:1px solid var(--line);
-    flex-shrink:0;
+    padding:14px 24px;background:var(--panel-bg);border-bottom:1px solid var(--line);
   }
   .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:.02em;}
   .brand .dot{width:10px;height:10px;border-radius:3px;background:var(--accent);transform:rotate(45deg);}
-  .topbar-actions{display:flex;gap:8px;}
-  button{
+
+  button, .btn{
     font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel-bg-2);
     color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;transition:.15s;
+    text-decoration:none;display:inline-block;
   }
-  button:hover{border-color:var(--accent);color:var(--accent);}
-  button.primary{background:var(--accent);border-color:var(--accent);color:#1c1408;font-weight:700;}
-  button.primary:hover{filter:brightness(1.08);color:#1c1408;}
+  button:hover, .btn:hover{border-color:var(--accent);color:var(--accent);}
+  button.primary, .btn.primary{background:var(--accent);border-color:var(--accent);color:#1c1408;font-weight:700;}
+  button.primary:hover, .btn.primary:hover{filter:brightness(1.08);color:#1c1408;}
   button.danger:hover{border-color:var(--danger);color:var(--danger);}
 
-  /* Layout */
-  .workspace{flex:1;display:flex;overflow:hidden;}
+  .wrap{max-width:900px;margin:0 auto;padding:32px 24px 80px;}
+  .wrap h1{font-size:20px;margin:0 0 6px;}
+  .wrap .lead{color:var(--text-dim);font-size:13px;margin:0 0 28px;}
 
-  .sidebar{
-    width:220px;flex-shrink:0;background:var(--panel-bg);border-right:1px solid var(--line);
-    padding:16px 14px;overflow-y:auto;
-  }
-  .sidebar h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin:0 0 10px;}
-  .block-btn{
-    display:flex;align-items:center;gap:10px;width:100%;text-align:left;
-    padding:10px 12px;margin-bottom:8px;background:var(--panel-bg-2);border:1px solid var(--line);
-    border-radius:10px;font-size:13px;
-  }
-  .block-btn:hover{border-color:var(--accent);}
-  .block-btn .ico{
-    width:22px;height:22px;border-radius:6px;background:var(--accent-dim);color:var(--accent);
-    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;
+  .empty{
+    border:1px dashed var(--line);border-radius:12px;padding:60px 20px;text-align:center;
+    color:var(--text-dim);font-size:14px;
   }
 
-  .canvas-area{flex:1;overflow-y:auto;background:#0f0e16;padding:40px;display:flex;justify-content:center;}
-  .page{
-    width:100%;max-width:760px;min-height:600px;background:var(--paper);color:#1c1b29;
-    border-radius:6px;box-shadow:0 20px 60px rgba(0,0,0,.4);padding:10px;
+  .site-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+  .site-card{
+    background:var(--panel-bg);border:1px solid var(--line);border-radius:12px;
+    padding:18px;display:flex;flex-direction:column;gap:10px;
   }
-  #canvas{min-height:580px;padding:10px;}
-  #canvas:empty::before{
-    content:"左のパーツをクリックしてページに追加してください";
-    color:#9a97ad;font-size:14px;display:block;padding:60px 20px;text-align:center;
-  }
-
-  .element-wrap{position:relative;margin:4px 0;border:1px solid transparent;border-radius:6px;}
-  .element-wrap:hover{border-color:#d8d3ea;}
-  .element-wrap.selected{border-color:var(--accent);}
-  .element-toolbar{
-    position:absolute;top:-14px;right:6px;display:none;gap:4px;z-index:5;
-  }
-  .element-wrap:hover .element-toolbar, .element-wrap.selected .element-toolbar{display:flex;}
-  .element-toolbar button{
-    padding:3px 7px;font-size:11px;border-radius:6px;background:#1c1b29;color:#fff;border:1px solid #1c1b29;
-  }
-  .element-toolbar button.danger{background:var(--danger);border-color:var(--danger);}
-
-  [data-el] .content{outline:none;padding:6px;border-radius:4px;}
-  [data-el] .content:focus{background:#fdf6ec;}
-
-  .el-heading .content{font-size:32px;font-weight:800;padding:10px 6px;}
-  .el-subheading .content{font-size:20px;font-weight:600;color:#5a5670;padding:6px;}
-  .el-paragraph .content{font-size:15px;line-height:1.8;padding:8px 6px;}
-  .el-button .content{
-    display:inline-block;background:#1c1b29;color:#fff;padding:10px 22px;border-radius:8px;
-    font-weight:700;font-size:14px;margin:6px;
-  }
-  .el-divider .content{border:none;border-top:2px solid #e7e3f0;margin:20px 0;height:0;}
-  .el-image{padding:6px;}
-  .el-image img{max-width:100%;border-radius:8px;display:block;}
-  .el-image .img-placeholder{
-    background:#f1eef8;border:2px dashed #d3cce8;color:#9a91c2;border-radius:8px;
-    padding:50px 10px;text-align:center;font-size:13px;cursor:pointer;
-  }
-  .el-section .content{background:#faf8f4;border-radius:10px;padding:24px;min-height:60px;}
-
-  /* Right style panel */
-  .styles-panel{
-    width:230px;flex-shrink:0;background:var(--panel-bg);border-left:1px solid var(--line);
-    padding:16px 14px;overflow-y:auto;
-  }
-  .styles-panel h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin:0 0 12px;}
-  .field{margin-bottom:14px;}
-  .field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;}
-  .field input[type=color]{width:100%;height:32px;border:1px solid var(--line);border-radius:6px;background:none;padding:2px;}
-  .field select, .field input[type=text]{
-    width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel-bg-2);color:var(--text);font-size:13px;
-  }
-  .align-row{display:flex;gap:6px;}
-  .align-row button{flex:1;padding:6px;}
-  .empty-hint{color:var(--text-dim);font-size:13px;line-height:1.6;}
-
-  .page-settings{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--line);}
+  .site-card h2{font-size:15px;margin:0;word-break:break-word;}
+  .site-card .meta{font-size:12px;color:var(--text-dim);}
+  .site-card .actions{display:flex;gap:8px;margin-top:auto;padding-top:8px;}
+  .site-card .actions button, .site-card .actions .btn{flex:1;text-align:center;}
 
   ::-webkit-scrollbar{width:10px;height:10px;}
   ::-webkit-scrollbar-thumb{background:#332f47;border-radius:6px;}
@@ -126,339 +63,99 @@
 <body>
 
 <div class="topbar">
-  <div class="brand"><span class="dot"></span>かんたんサイトビルダー</div>
-  <div class="topbar-actions">
-    <button id="clearBtn" class="danger">リセット</button>
-    <button id="downloadBtn" class="primary">HTMLをダウンロード</button>
-  </div>
+  <div class="brand"><span class="dot"></span>作ったサイト一覧</div>
+  <a class="btn primary" href="edit.html">＋ 新しいサイトを作る</a>
 </div>
 
-<div class="workspace">
-  <div class="sidebar">
-    <h3>ページ設定</h3>
-    <div class="page-settings">
-      <div class="field">
-        <label>サイトタイトル</label>
-        <input type="text" id="siteTitle" value="マイサイト">
-      </div>
-    </div>
-    <h3>パーツを追加</h3>
-    <button class="block-btn" data-add="heading"><span class="ico">H1</span>見出し</button>
-    <button class="block-btn" data-add="subheading"><span class="ico">H2</span>小見出し</button>
-    <button class="block-btn" data-add="paragraph"><span class="ico">¶</span>段落テキスト</button>
-    <button class="block-btn" data-add="image"><span class="ico">🖼</span>画像</button>
-    <button class="block-btn" data-add="button"><span class="ico">▭</span>ボタン</button>
-    <button class="block-btn" data-add="divider"><span class="ico">―</span>区切り線</button>
-    <button class="block-btn" data-add="section"><span class="ico">▢</span>セクション枠</button>
-  </div>
+<div class="wrap">
+  <h1>これまでに作ったサイト</h1>
+  <p class="lead">「かんたんサイトビルダー（edit.html）」でHTMLをダウンロードするたびに、このブラウザに一覧として保存されます。※このブラウザ・この端末でのみ表示されます。</p>
 
-  <div class="canvas-area">
-    <div class="page">
-      <div id="canvas"></div>
-    </div>
-  </div>
-
-  <div class="styles-panel" id="stylesPanel">
-    <h3>スタイル</h3>
-    <div class="empty-hint">要素をクリックすると、ここで文字色・背景色・配置などを編集できます。</div>
-  </div>
+  <div id="siteList"></div>
 </div>
-
-<input type="file" id="imgInput" accept="image/*" style="display:none;">
 
 <script>
-const canvas = document.getElementById('canvas');
-const stylesPanel = document.getElementById('stylesPanel');
-const imgInput = document.getElementById('imgInput');
-let selected = null;
-let idCounter = 0;
-let pendingImageWrap = null;
-
-const templates = {
-  heading: () => `<div class="content" contenteditable="true">見出しテキスト</div>`,
-  subheading: () => `<div class="content" contenteditable="true">小見出しテキスト</div>`,
-  paragraph: () => `<div class="content" contenteditable="true">ここに段落のテキストを入力します。クリックして自由に編集できます。</div>`,
-  button: () => `<div class="content" contenteditable="true">ボタンのテキスト</div>`,
-  divider: () => `<div class="content"></div>`,
-  section: () => `<div class="content" contenteditable="true">ここはセクションです。テキストや説明を入力してください。</div>`,
-  image: () => `<div class="img-placeholder">クリックして画像をアップロード</div>`
-};
-
-function addBlock(type){
-  idCounter++;
-  const wrap = document.createElement('div');
-  wrap.className = 'element-wrap el-' + type;
-  wrap.dataset.el = type;
-  wrap.dataset.id = 'el-' + idCounter;
-
-  const toolbar = document.createElement('div');
-  toolbar.className = 'element-toolbar';
-  toolbar.innerHTML = `
-    <button data-act="up" title="上へ">↑</button>
-    <button data-act="down" title="下へ">↓</button>
-    <button data-act="dup" title="複製">⧉</button>
-    <button data-act="del" class="danger" title="削除">✕</button>
-  `;
-
-  wrap.innerHTML = templates[type]();
-  wrap.appendChild(toolbar);
-  canvas.appendChild(wrap);
-  selectElement(wrap);
+function loadSites(){
+  let list = [];
+  try{
+    const raw = localStorage.getItem('mySites');
+    if(raw) list = JSON.parse(raw);
+  }catch(e){ list = []; }
+  return list.slice().reverse();
 }
 
-document.querySelectorAll('[data-add]').forEach(btn=>{
-  btn.addEventListener('click', ()=> addBlock(btn.dataset.add));
-});
-
-canvas.addEventListener('click', (e)=>{
-  const wrap = e.target.closest('.element-wrap');
-  if(!wrap) return;
-
-  const actBtn = e.target.closest('[data-act]');
-  if(actBtn){
-    e.stopPropagation();
-    handleAction(wrap, actBtn.dataset.act);
-    return;
-  }
-
-  if(e.target.classList.contains('img-placeholder')){
-    pendingImageWrap = wrap;
-    imgInput.click();
-    return;
-  }
-
-  selectElement(wrap);
-});
-
-imgInput.addEventListener('change', (e)=>{
-  const file = e.target.files[0];
-  if(!file || !pendingImageWrap) return;
-  const reader = new FileReader();
-  reader.onload = (ev)=>{
-    pendingImageWrap.innerHTML = `<img src="${ev.target.result}" alt="画像">` + pendingImageWrap.querySelector('.element-toolbar').outerHTML;
-    selectElement(pendingImageWrap);
-  };
-  reader.readAsDataURL(file);
-  imgInput.value = '';
-});
-
-function handleAction(wrap, act){
-  if(act === 'del'){
-    if(selected === wrap){ selected = null; renderStylesPanel(); }
-    wrap.remove();
-    return;
-  }
-  if(act === 'up'){
-    const prev = wrap.previousElementSibling;
-    if(prev) canvas.insertBefore(wrap, prev);
-    return;
-  }
-  if(act === 'down'){
-    const next = wrap.nextElementSibling;
-    if(next) canvas.insertBefore(next, wrap);
-    return;
-  }
-  if(act === 'dup'){
-    const clone = wrap.cloneNode(true);
-    clone.dataset.id = 'el-' + (++idCounter);
-    wrap.after(clone);
-    selectElement(clone);
-    return;
-  }
+function saveSites(list){
+  localStorage.setItem('mySites', JSON.stringify(list.slice().reverse()));
 }
 
-function selectElement(wrap){
-  document.querySelectorAll('.element-wrap.selected').forEach(w=>w.classList.remove('selected'));
-  wrap.classList.add('selected');
-  selected = wrap;
-  renderStylesPanel();
+function formatDate(iso){
+  try{
+    const d = new Date(iso);
+    return d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0')
+      + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }catch(e){ return ''; }
 }
-
-function renderStylesPanel(){
-  if(!selected){
-    stylesPanel.innerHTML = `<h3>スタイル</h3><div class="empty-hint">要素をクリックすると、ここで文字色・背景色・配置などを編集できます。</div>`;
-    return;
-  }
-  const type = selected.dataset.el;
-  const content = selected.querySelector('.content, img');
-  const cs = content ? getComputedStyle(content) : null;
-
-  let html = `<h3>スタイル（${labelFor(type)}）</h3>`;
-
-  if(type !== 'image'){
-    html += `
-      <div class="field">
-        <label>文字揃え</label>
-        <div class="align-row">
-          <button data-style="align" data-val="left">左</button>
-          <button data-style="align" data-val="center">中央</button>
-          <button data-style="align" data-val="right">右</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>文字色</label>
-        <input type="color" data-style="color" value="${rgbToHex(cs.color)}">
-      </div>
-    `;
-  }
-
-  if(type === 'button' || type === 'section'){
-    html += `
-      <div class="field">
-        <label>背景色</label>
-        <input type="color" data-style="bg" value="${rgbToHex(cs.backgroundColor)}">
-      </div>
-    `;
-  }
-
-  if(type === 'heading' || type === 'subheading' || type === 'paragraph'){
-    html += `
-      <div class="field">
-        <label>文字サイズ</label>
-        <select data-style="size">
-          <option value="14px">小</option>
-          <option value="16px">標準</option>
-          <option value="20px">やや大</option>
-          <option value="28px">大</option>
-          <option value="40px">特大</option>
-        </select>
-      </div>
-    `;
-  }
-
-  stylesPanel.innerHTML = html;
-
-  stylesPanel.querySelectorAll('[data-style]').forEach(ctrl=>{
-    ctrl.addEventListener('click', (e)=>{
-      if(ctrl.tagName !== 'BUTTON') return;
-      applyStyle(ctrl.dataset.style, ctrl.dataset.val);
-    });
-    ctrl.addEventListener('input', ()=>{
-      if(ctrl.tagName === 'BUTTON') return;
-      applyStyle(ctrl.dataset.style, ctrl.value);
-    });
-  });
-}
-
-function applyStyle(kind, val){
-  if(!selected) return;
-  const content = selected.querySelector('.content');
-  if(!content) return;
-  if(kind === 'align') content.style.textAlign = val;
-  if(kind === 'color') content.style.color = val;
-  if(kind === 'bg') content.style.background = val;
-  if(kind === 'size') content.style.fontSize = val;
-}
-
-function labelFor(type){
-  return {heading:'見出し',subheading:'小見出し',paragraph:'段落',image:'画像',button:'ボタン',divider:'区切り線',section:'セクション'}[type] || type;
-}
-
-function rgbToHex(rgb){
-  if(!rgb || rgb.indexOf('rgb') === -1) return '#000000';
-  const nums = rgb.match(/\d+/g).map(Number);
-  return '#' + nums.slice(0,3).map(n=>n.toString(16).padStart(2,'0')).join('');
-}
-
-document.addEventListener('click', (e)=>{
-  if(!e.target.closest('.element-wrap')){
-    document.querySelectorAll('.element-wrap.selected').forEach(w=>w.classList.remove('selected'));
-    selected = null;
-    renderStylesPanel();
-  }
-});
-
-document.getElementById('clearBtn').addEventListener('click', ()=>{
-  if(confirm('作成中のページをすべて削除します。よろしいですか？')){
-    canvas.innerHTML = '';
-    selected = null;
-    renderStylesPanel();
-  }
-});
-
-document.getElementById('downloadBtn').addEventListener('click', ()=>{
-  const title = document.getElementById('siteTitle').value || 'マイサイト';
-  const bodyContent = getCleanCanvasHTML();
-
-  const output = `<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHTML(title)}</title>
-<style>
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;color:#1c1b29;background:#f4f2ee;}
-  .page-container{max-width:760px;margin:0 auto;padding:40px 20px;background:#fff;min-height:100vh;}
-  h1,h2,p{margin:0 0 4px;}
-  img{max-width:100%;border-radius:8px;display:block;}
-  .btn-el{display:inline-block;background:#1c1b29;color:#fff;padding:10px 22px;border-radius:8px;font-weight:700;font-size:14px;margin:6px 0;text-decoration:none;}
-  .section-el{background:#faf8f4;border-radius:10px;padding:24px;margin:10px 0;}
-  .divider-el{border:none;border-top:2px solid #e7e3f0;margin:20px 0;}
-  .heading-el{font-size:32px;font-weight:800;padding:10px 0;}
-  .subheading-el{font-size:20px;font-weight:600;color:#5a5670;padding:6px 0;}
-  .paragraph-el{font-size:15px;line-height:1.8;padding:8px 0;}
-</style>
-</head>
-<body>
-<div class="page-container">
-${bodyContent}
-</div>
-</body>
-</html>`;
-
-  const blob = new Blob([output], {type:'text/html'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = (title.trim() || 'site') + '.html';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-});
 
 function escapeHTML(str){
   const div = document.createElement('div');
-  div.textContent = str;
+  div.textContent = str || '';
   return div.innerHTML;
 }
 
-function getCleanCanvasHTML(){
-  const clone = canvas.cloneNode(true);
-  clone.querySelectorAll('.element-toolbar').forEach(t=>t.remove());
+function render(){
+  const container = document.getElementById('siteList');
+  const sites = loadSites();
 
-  const tagMap = {
-    heading: 'h1', subheading: 'h2', paragraph: 'p',
-    button: 'a', divider: 'hr', section: 'div', image: 'div'
-  };
-  const classMap = {
-    heading: 'heading-el', subheading: 'subheading-el', paragraph: 'paragraph-el',
-    button: 'btn-el', divider: 'divider-el', section: 'section-el', image: 'image-el'
-  };
+  if(sites.length === 0){
+    container.innerHTML = `<div class="empty">まだサイトが保存されていません。<br>「かんたんサイトビルダー」でサイトを作ってダウンロードすると、ここに表示されます。</div>`;
+    return;
+  }
 
-  let out = '';
-  clone.querySelectorAll(':scope > .element-wrap').forEach(wrap=>{
-    const type = wrap.dataset.el;
-    const content = wrap.querySelector('.content');
-    const img = wrap.querySelector('img');
+  container.innerHTML = `<div class="site-grid">` + sites.map(site => `
+    <div class="site-card" data-id="${escapeHTML(site.id)}">
+      <h2>${escapeHTML(site.title || '無題のサイト')}</h2>
+      <div class="meta">保存日時: ${formatDate(site.savedAt)}</div>
+      <div class="actions">
+        <button type="button" class="open-btn primary">開く</button>
+        <button type="button" class="dl-btn">再ダウンロード</button>
+        <button type="button" class="del-btn danger">削除</button>
+      </div>
+    </div>
+  `).join('') + `</div>`;
 
-    const inlineStyle = content ? content.getAttribute('style') || '' : '';
-    const styleAttr = inlineStyle ? ` style="${inlineStyle}"` : '';
+  container.querySelectorAll('.site-card').forEach(card=>{
+    const id = card.dataset.id;
+    const site = sites.find(s => s.id === id);
+    if(!site) return;
 
-    if(type === 'image'){
-      out += img ? `<div class="image-el">${img.outerHTML}</div>\n` : '';
-    } else if(type === 'divider'){
-      out += `<hr class="divider-el">\n`;
-    } else if(type === 'button'){
-      out += `<a href="#" class="btn-el"${styleAttr}>${content.innerHTML}</a>\n`;
-    } else {
-      const tag = tagMap[type];
-      const cls = classMap[type];
-      out += `<${tag} class="${cls}"${styleAttr}>${content.innerHTML}</${tag}>\n`;
-    }
+    card.querySelector('.open-btn').addEventListener('click', ()=>{
+      const blob = new Blob([site.html], {type:'text/html'});
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    });
+
+    card.querySelector('.dl-btn').addEventListener('click', ()=>{
+      const blob = new Blob([site.html], {type:'text/html'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (site.title || 'site') + '.html';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    card.querySelector('.del-btn').addEventListener('click', ()=>{
+      if(!confirm('この一覧からサイトを削除します。よろしいですか？（ダウンロード済みのファイルは残ります）')) return;
+      const all = loadSites().filter(s => s.id !== id);
+      saveSites(all);
+      render();
+    });
   });
-  return out;
 }
+
+render();
 </script>
 
 </body>
