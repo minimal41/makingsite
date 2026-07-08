@@ -266,6 +266,86 @@
   .embed-preview{border:1px dashed var(--line);border-radius:3px;padding:8px;min-height:10px;cursor:move;}
   .embed-preview:empty{display:none;}
 
+  .el-table .content{padding:6px;cursor:move;overflow-x:auto;}
+  .site-table{border-radius:0;}
+  .site-table td, .site-table th{border-radius:0;}
+
+  .table-modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;
+    align-items:center;justify-content:center;padding:16px;
+  }
+  .table-modal-overlay.show{display:flex;}
+  .table-modal{
+    background:#fff;border-radius:4px;width:min(96vw, 1400px);height:92vh;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .table-modal-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 16px;border-bottom:1px solid var(--line);flex-shrink:0;
+  }
+  .table-modal-header h3{margin:0;font-size:14px;font-weight:800;}
+  .table-modal-close-btn{
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+    width:28px;height:28px;padding:0;margin-left:12px;font-size:15px;
+    border-radius:3px;border:1px solid var(--line);background:var(--panel-bg-2);color:var(--text);
+  }
+  .table-modal-close-btn:hover{border-color:var(--danger);color:var(--danger);}
+
+  .table-mode-toolbar{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:10px 16px;border-bottom:1px solid var(--line);flex-shrink:0;background:var(--panel-bg-2);
+  }
+  .table-mode-toolbar .hint{font-size:12px;color:var(--text-dim);}
+
+  .table-border-toolbar{
+    display:none;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:10px 16px;border-bottom:1px solid var(--line);flex-shrink:0;background:#fdf6ec;
+  }
+  .table-border-toolbar.show{display:flex;}
+  .table-border-toolbar .hint{font-size:12px;color:var(--text-dim);}
+  .border-preset-grid{display:flex;gap:4px;padding:4px;background:var(--panel-bg);border:1px solid var(--line);border-radius:3px;}
+  .border-preset-grid button{padding:6px 10px;font-size:12px;min-width:44px;}
+  .table-border-toolbar label{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:4px;}
+  .table-border-toolbar input[type=color]{width:32px;height:28px;padding:1px;border:1px solid var(--line);border-radius:3px;}
+  .table-border-toolbar input[type=number]{width:56px;padding:5px 6px;border:1px solid var(--line);border-radius:3px;font-size:12px;}
+  .table-border-toolbar select{padding:5px 6px;border:1px solid var(--line);border-radius:3px;font-size:12px;}
+
+  .table-modal-scroll{
+    position:relative;flex:1;overflow:auto;padding:16px 40px 40px 40px;
+  }
+  .table-modal-body{display:inline-block;margin-left:26px;margin-top:26px;outline:none;}
+  .table-modal-body table{border-collapse:separate;border-spacing:0;}
+  .table-modal-body td, .table-modal-body th{outline:none;min-width:70px;padding:8px 10px;}
+  .table-modal-body td:focus, .table-modal-body th:focus{background:#fdf6ec;}
+  .table-modal-body.select-mode td, .table-modal-body.select-mode th{cursor:cell;user-select:none;}
+  .table-modal-body td.cell-selected, .table-modal-body th.cell-selected{
+    background:rgba(22,66,224,.15);outline:1px solid var(--accent);outline-offset:-1px;
+  }
+
+  .table-row-ctrl, .table-col-ctrl, .table-add-row-btn, .table-add-col-btn{display:block;}
+  .table-modal-scroll.select-mode-active .table-row-ctrl,
+  .table-modal-scroll.select-mode-active .table-col-ctrl,
+  .table-modal-scroll.select-mode-active .table-add-row-btn,
+  .table-modal-scroll.select-mode-active .table-add-col-btn{display:none;}
+  .table-row-ctrl, .table-col-ctrl{position:absolute;top:0;left:0;}
+  .table-row-del-btn, .table-col-del-btn{
+    position:absolute;display:flex;align-items:center;justify-content:center;
+    background:var(--panel-bg-2);border:1px solid var(--line);color:var(--text-dim);
+    font-size:10px;cursor:pointer;padding:0;border-radius:2px;
+  }
+  .table-row-del-btn{left:0;width:22px;}
+  .table-col-del-btn{top:0;height:22px;}
+  .table-row-del-btn:hover, .table-col-del-btn:hover{border-color:var(--danger);color:var(--danger);}
+
+  .table-add-row-btn{
+    position:absolute;padding:6px 18px;font-size:16px;font-weight:700;
+    border-radius:3px;transform:translateX(-50%);
+  }
+  .table-add-col-btn{
+    position:absolute;padding:10px 6px;font-size:16px;font-weight:700;
+    border-radius:3px;transform:translateY(-50%);
+  }
+
   ::-webkit-scrollbar{width:10px;height:10px;}
   ::-webkit-scrollbar-thumb{background:#c7c7c2;border-radius:3px;}
 </style>
@@ -298,6 +378,7 @@
     <button class="block-btn" draggable="true" data-add="divider"><span class="ico">―</span>区切り線<span class="drag-hint">⠿</span></button>
     <button class="block-btn" draggable="true" data-add="section"><span class="ico">▢</span>セクション枠<span class="drag-hint">⠿</span></button>
     <button class="block-btn" draggable="true" data-add="embed"><span class="ico">&lt;/&gt;</span>HTML埋め込み<span class="drag-hint">⠿</span></button>
+    <button class="block-btn" draggable="true" data-add="table"><span class="ico">▦</span>表<span class="drag-hint">⠿</span></button>
 
     <h3 style="margin-top:20px;">ページ設定</h3>
     <div class="page-settings" style="border-bottom:none;margin-bottom:0;padding-bottom:0;">
@@ -357,6 +438,53 @@
 
 <input type="file" id="imgInput" accept="image/*" style="display:none;">
 
+<div class="table-modal-overlay" id="tableModalOverlay">
+  <div class="table-modal">
+    <div class="table-modal-header">
+      <h3>表を編集</h3>
+      <button type="button" class="table-modal-close-btn" id="tableModalCloseBtn">✕</button>
+    </div>
+    <div class="table-mode-toolbar" id="tableContentToolbar">
+      <span class="hint">Ctrl+Enterで次のマス／Ctrl+Shift+Enterで前のマスへ</span>
+      <button type="button" id="tableBorderModeBtn">枠線を編集</button>
+    </div>
+    <div class="table-border-toolbar" id="tableBorderToolbar">
+      <button type="button" id="tableContentModeBtn">← 内容編集にもどる</button>
+      <span class="hint">セルをクリック／ドラッグで選択（Ctrl+Aで全選択、Shift+矢印キーで範囲選択）</span>
+      <div class="border-preset-grid">
+        <button type="button" data-preset="all" title="選択範囲すべてのマス目に線を引きます">全て</button>
+        <button type="button" data-preset="outer" title="選択範囲の外側だけに線を引きます">外枠</button>
+        <button type="button" data-preset="inner" title="選択範囲の内側の線だけ引きます">内側</button>
+        <button type="button" data-preset="innerH" title="選択範囲内の横方向の線だけ引きます（行と行の間）">中央(横)</button>
+        <button type="button" data-preset="innerV" title="選択範囲内の縦方向の線だけ引きます（列と列の間）">中央(縦)</button>
+        <button type="button" data-preset="top" title="選択範囲の一番上に線を引きます">上</button>
+        <button type="button" data-preset="bottom" title="選択範囲の一番下に線を引きます">下</button>
+        <button type="button" data-preset="left" title="選択範囲の一番左に線を引きます">左</button>
+        <button type="button" data-preset="right" title="選択範囲の一番右に線を引きます">右</button>
+        <button type="button" data-preset="none" title="選択範囲の線を消します">なし</button>
+      </div>
+      <label>色 <input type="color" id="cellBorderColor" value="#1c1c1a"></label>
+      <label>太さ <input type="number" id="cellBorderWidth" min="1" max="20" step="1" value="1">px</label>
+      <label>種類
+        <select id="cellBorderStyle">
+          <option value="solid">実線</option>
+          <option value="dashed">破線</option>
+          <option value="dotted">点線</option>
+          <option value="double">二重線</option>
+          <option value="wavy">波線</option>
+        </select>
+      </label>
+    </div>
+    <div class="table-modal-scroll" id="tableModalScroll">
+      <div class="table-row-ctrl" id="tableRowCtrl"></div>
+      <div class="table-col-ctrl" id="tableColCtrl"></div>
+      <div class="table-modal-body" id="tableModalBody" tabindex="0"></div>
+      <button type="button" class="table-add-row-btn" id="tableAddRowBtn" title="行を追加">＋</button>
+      <button type="button" class="table-add-col-btn" id="tableAddColBtn" title="列を追加">＋</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const canvas = document.getElementById('canvas');
 const pageEl = document.querySelector('.page');
@@ -368,6 +496,415 @@ previewWidthBtn.addEventListener('click', ()=>{
 });
 const stylesPanel = document.getElementById('stylesPanel');
 const imgInput = document.getElementById('imgInput');
+
+/* --- 表の編集モーダル --- */
+const tableModalOverlay = document.getElementById('tableModalOverlay');
+const tableModalScroll = document.getElementById('tableModalScroll');
+const tableModalBody = document.getElementById('tableModalBody');
+const tableModalCloseBtn = document.getElementById('tableModalCloseBtn');
+const tableRowCtrl = document.getElementById('tableRowCtrl');
+const tableColCtrl = document.getElementById('tableColCtrl');
+const tableAddRowBtn = document.getElementById('tableAddRowBtn');
+const tableAddColBtn = document.getElementById('tableAddColBtn');
+const tableContentToolbar = document.getElementById('tableContentToolbar');
+const tableBorderToolbar = document.getElementById('tableBorderToolbar');
+const tableBorderModeBtn = document.getElementById('tableBorderModeBtn');
+const tableContentModeBtn = document.getElementById('tableContentModeBtn');
+const cellBorderColor = document.getElementById('cellBorderColor');
+const cellBorderWidth = document.getElementById('cellBorderWidth');
+const cellBorderStyle = document.getElementById('cellBorderStyle');
+let tableModalWrap = null;
+let tableJustDragged = false;
+let borderEditMode = false;
+let tableGrid = [];
+let selAnchor = null;
+let selFocus = null;
+let isDraggingSelection = false;
+
+function openTableModal(wrap){
+  const table = wrap.querySelector('table');
+  if(!table) return;
+  tableModalWrap = wrap;
+  const clone = table.cloneNode(true);
+  clone.querySelectorAll('td, th').forEach(c => c.contentEditable = 'true');
+  tableModalBody.innerHTML = '';
+  tableModalBody.appendChild(clone);
+  tableModalOverlay.classList.add('show');
+  exitBorderEditMode();
+  requestAnimationFrame(syncTableControls);
+}
+
+function closeTableModal(){
+  if(!tableModalWrap) return;
+  exitBorderEditMode();
+  const editedTable = tableModalBody.querySelector('table');
+  if(editedTable){
+    editedTable.querySelectorAll('td, th').forEach(c => c.removeAttribute('contenteditable'));
+    const content = tableModalWrap.querySelector('.content');
+    const oldTable = content ? content.querySelector('table') : null;
+    if(oldTable) oldTable.replaceWith(editedTable);
+    else if(content) content.appendChild(editedTable);
+  }
+  tableModalBody.innerHTML = '';
+  tableRowCtrl.innerHTML = '';
+  tableColCtrl.innerHTML = '';
+  tableModalWrap = null;
+  tableModalOverlay.classList.remove('show');
+  pushHistory();
+}
+
+tableModalCloseBtn.addEventListener('click', closeTableModal);
+tableModalOverlay.addEventListener('mousedown', (e)=>{
+  if(e.target === tableModalOverlay) closeTableModal();
+});
+
+/* 表・行・列に合わせて、行/列の削除ボタンと追加(＋)ボタンの位置を計算し直す */
+function syncTableControls(){
+  const table = tableModalBody.querySelector('table');
+  tableRowCtrl.innerHTML = '';
+  tableColCtrl.innerHTML = '';
+  if(!table) return;
+
+  const rows = [...table.querySelectorAll('tr')];
+  if(!rows.length) return;
+  const scrollRect = tableModalScroll.getBoundingClientRect();
+  const scrollLeft = tableModalScroll.scrollLeft;
+  const scrollTop = tableModalScroll.scrollTop;
+
+  rows.forEach((tr, i)=>{
+    const rect = tr.getBoundingClientRect();
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'table-row-del-btn';
+    btn.textContent = '✕';
+    btn.title = (i + 1) + '行目を削除';
+    btn.style.top = (rect.top - scrollRect.top + scrollTop) + 'px';
+    btn.style.height = rect.height + 'px';
+    btn.addEventListener('click', ()=>{
+      if(rows.length <= 1) return;
+      tr.remove();
+      syncTableControls();
+    });
+    tableRowCtrl.appendChild(btn);
+  });
+
+  const firstRowCells = [...rows[0].querySelectorAll('td, th')];
+  firstRowCells.forEach((cell, colIndex)=>{
+    const rect = cell.getBoundingClientRect();
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'table-col-del-btn';
+    btn.textContent = '✕';
+    btn.title = (colIndex + 1) + '列目を削除';
+    btn.style.left = (rect.left - scrollRect.left + scrollLeft) + 'px';
+    btn.style.width = rect.width + 'px';
+    btn.addEventListener('click', ()=>{
+      if(firstRowCells.length <= 1) return;
+      rows.forEach(r=>{
+        const cells = r.querySelectorAll('td, th');
+        if(cells[colIndex]) cells[colIndex].remove();
+      });
+      syncTableControls();
+    });
+    tableColCtrl.appendChild(btn);
+  });
+
+  const tableRect = table.getBoundingClientRect();
+  tableAddRowBtn.style.top = (tableRect.bottom - scrollRect.top + scrollTop + 10) + 'px';
+  tableAddRowBtn.style.left = (tableRect.left - scrollRect.left + scrollLeft + tableRect.width / 2) + 'px';
+  tableAddColBtn.style.left = (tableRect.right - scrollRect.left + scrollLeft + 10) + 'px';
+  tableAddColBtn.style.top = (tableRect.top - scrollRect.top + scrollTop + tableRect.height / 2) + 'px';
+}
+
+tableAddRowBtn.addEventListener('click', ()=>{
+  const table = tableModalBody.querySelector('table');
+  if(!table) return;
+  const rows = table.querySelectorAll('tr');
+  const colCount = rows.length ? rows[0].querySelectorAll('td, th').length : 1;
+  const tr = document.createElement('tr');
+  for(let i = 0; i < colCount; i++){
+    tr.insertAdjacentHTML('beforeend', tableCellHTML());
+  }
+  (table.querySelector('tbody') || table).appendChild(tr);
+  tr.querySelectorAll('td, th').forEach(c => c.contentEditable = 'true');
+  syncTableControls();
+});
+
+tableAddColBtn.addEventListener('click', ()=>{
+  const table = tableModalBody.querySelector('table');
+  if(!table) return;
+  table.querySelectorAll('tr').forEach(tr=>{
+    tr.insertAdjacentHTML('beforeend', tableCellHTML());
+    const added = tr.lastElementChild;
+    if(added) added.contentEditable = 'true';
+  });
+  syncTableControls();
+});
+
+/* 見出し・段落と同じく、プレースホルダーの「セル」はカーソルを入れると自動で消える */
+tableModalBody.addEventListener('focusin', (e)=>{
+  const cell = e.target.closest('td, th');
+  if(!cell) return;
+  if(cell.textContent === 'セル'){
+    cell.textContent = '';
+  }
+});
+
+tableModalBody.addEventListener('focusout', (e)=>{
+  const cell = e.target.closest('td, th');
+  if(!cell) return;
+  if(cell.textContent.trim() === ''){
+    cell.textContent = 'セル';
+  }
+});
+
+/* Ctrl+Enterで次のマス、Ctrl+Shift+Enterで前のマスへ移動(内容編集モード) */
+tableModalBody.addEventListener('keydown', (e)=>{
+  if(borderEditMode) return;
+  if(e.key !== 'Enter' || !e.ctrlKey) return;
+  const cell = e.target.closest('td, th');
+  if(!cell) return;
+  e.preventDefault();
+  const table = tableModalBody.querySelector('table');
+  if(!table) return;
+  const cells = [...table.querySelectorAll('td, th')];
+  const idx = cells.indexOf(cell);
+  if(idx === -1) return;
+  const nextIdx = e.shiftKey ? idx - 1 : idx + 1;
+  const target = cells[nextIdx];
+  if(!target) return;
+  target.focus();
+  const range = document.createRange();
+  range.selectNodeContents(target);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+});
+
+/* ============ 枠線編集モード(Excelのようなセル選択+罫線プリセット) ============ */
+
+function buildTableGrid(){
+  const table = tableModalBody.querySelector('table');
+  tableGrid = [];
+  if(!table) return;
+  table.querySelectorAll('tr').forEach(tr=>{
+    tableGrid.push([...tr.querySelectorAll('td, th')]);
+  });
+}
+
+function findCellPos(cell){
+  for(let r = 0; r < tableGrid.length; r++){
+    const c = tableGrid[r].indexOf(cell);
+    if(c !== -1) return {row: r, col: c};
+  }
+  return null;
+}
+
+function clearSelectionHighlight(){
+  tableModalBody.querySelectorAll('.cell-selected').forEach(c => c.classList.remove('cell-selected'));
+}
+
+function renderSelectionHighlight(){
+  clearSelectionHighlight();
+  if(!selAnchor || !selFocus) return;
+  const r1 = Math.min(selAnchor.row, selFocus.row), r2 = Math.max(selAnchor.row, selFocus.row);
+  const c1 = Math.min(selAnchor.col, selFocus.col), c2 = Math.max(selAnchor.col, selFocus.col);
+  for(let r = r1; r <= r2; r++){
+    for(let c = c1; c <= c2; c++){
+      if(tableGrid[r] && tableGrid[r][c]) tableGrid[r][c].classList.add('cell-selected');
+    }
+  }
+}
+
+function enterBorderEditMode(){
+  borderEditMode = true;
+  buildTableGrid();
+  tableModalBody.querySelectorAll('td, th').forEach(c => c.removeAttribute('contenteditable'));
+  tableModalBody.classList.add('select-mode');
+  tableModalScroll.classList.add('select-mode-active');
+  tableContentToolbar.style.display = 'none';
+  tableBorderToolbar.classList.add('show');
+  if(tableGrid.length && tableGrid[0].length){
+    selAnchor = {row: 0, col: 0};
+    selFocus = {row: 0, col: 0};
+    renderSelectionHighlight();
+  }
+  tableModalBody.focus();
+}
+
+function exitBorderEditMode(){
+  borderEditMode = false;
+  clearSelectionHighlight();
+  selAnchor = null;
+  selFocus = null;
+  tableModalBody.querySelectorAll('td, th').forEach(c => c.contentEditable = 'true');
+  tableModalBody.classList.remove('select-mode');
+  tableModalScroll.classList.remove('select-mode-active');
+  tableContentToolbar.style.display = 'flex';
+  tableBorderToolbar.classList.remove('show');
+}
+
+tableBorderModeBtn.addEventListener('click', enterBorderEditMode);
+tableContentModeBtn.addEventListener('click', exitBorderEditMode);
+
+tableModalBody.addEventListener('mousedown', (e)=>{
+  if(!borderEditMode) return;
+  const cell = e.target.closest('td, th');
+  if(!cell) return;
+  e.preventDefault();
+  const pos = findCellPos(cell);
+  if(!pos) return;
+  if(e.shiftKey && selAnchor){
+    selFocus = pos;
+  } else {
+    selAnchor = pos;
+    selFocus = pos;
+  }
+  isDraggingSelection = true;
+  renderSelectionHighlight();
+  tableModalBody.focus();
+});
+
+tableModalBody.addEventListener('mousemove', (e)=>{
+  if(!borderEditMode || !isDraggingSelection) return;
+  const cell = e.target.closest('td, th');
+  if(!cell) return;
+  const pos = findCellPos(cell);
+  if(!pos) return;
+  selFocus = pos;
+  renderSelectionHighlight();
+});
+
+document.addEventListener('mouseup', ()=>{
+  isDraggingSelection = false;
+});
+
+tableModalBody.addEventListener('keydown', (e)=>{
+  if(!borderEditMode) return;
+
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a'){
+    e.preventDefault();
+    if(tableGrid.length && tableGrid[0].length){
+      selAnchor = {row: 0, col: 0};
+      selFocus = {row: tableGrid.length - 1, col: tableGrid[0].length - 1};
+      renderSelectionHighlight();
+    }
+    return;
+  }
+
+  const arrowMap = {ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1]};
+  if(arrowMap[e.key] && selFocus && tableGrid.length){
+    e.preventDefault();
+    const [dr, dc] = arrowMap[e.key];
+    const newRow = Math.max(0, Math.min(tableGrid.length - 1, selFocus.row + dr));
+    const newCol = Math.max(0, Math.min(tableGrid[0].length - 1, selFocus.col + dc));
+    selFocus = {row: newRow, col: newCol};
+    if(!e.shiftKey){
+      selAnchor = selFocus;
+    }
+    renderSelectionHighlight();
+  }
+});
+
+function wavyBorderImageValue(color){
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><path d="M0 5 Q5 0 10 5 T20 5" fill="none" stroke="${color}" stroke-width="2"/></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
+/* Excelの罫線ボタンのように、選択範囲に対して「全て/外枠/内側/上/下/左/右/なし」を適用する */
+function applyPresetBorder(preset){
+  if(!selAnchor || !selFocus) return;
+  const r1 = Math.min(selAnchor.row, selFocus.row), r2 = Math.max(selAnchor.row, selFocus.row);
+  const c1 = Math.min(selAnchor.col, selFocus.col), c2 = Math.max(selAnchor.col, selFocus.col);
+
+  const color = cellBorderColor.value;
+  let width = parseInt(cellBorderWidth.value, 10);
+  if(!Number.isFinite(width) || width < 1) width = 1;
+  const style = cellBorderStyle.value;
+  if(style === 'double' && width < 3){
+    width = 3;
+    cellBorderWidth.value = width;
+  }
+
+  const allSides = ['top', 'right', 'bottom', 'left'];
+
+  for(let r = r1; r <= r2; r++){
+    for(let c = c1; c <= c2; c++){
+      const cell = tableGrid[r] && tableGrid[r][c];
+      if(!cell) continue;
+
+      const isTop = r === r1, isBottom = r === r2, isLeft = c === c1, isRight = c === c2;
+      let sides = [];
+      if(preset === 'all' || preset === 'none'){
+        sides = allSides.slice();
+      } else if(preset === 'outer'){
+        if(isTop) sides.push('top');
+        if(isBottom) sides.push('bottom');
+        if(isLeft) sides.push('left');
+        if(isRight) sides.push('right');
+      } else if(preset === 'inner'){
+        if(!isTop) sides.push('top');
+        if(!isBottom) sides.push('bottom');
+        if(!isLeft) sides.push('left');
+        if(!isRight) sides.push('right');
+      } else if(preset === 'innerH'){
+        if(!isTop) sides.push('top');
+        if(!isBottom) sides.push('bottom');
+      } else if(preset === 'innerV'){
+        if(!isLeft) sides.push('left');
+        if(!isRight) sides.push('right');
+      } else if(preset === 'top' && isTop){
+        sides.push('top');
+      } else if(preset === 'bottom' && isBottom){
+        sides.push('bottom');
+      } else if(preset === 'left' && isLeft){
+        sides.push('left');
+      } else if(preset === 'right' && isRight){
+        sides.push('right');
+      }
+      if(sides.length === 0) continue;
+
+      if(preset === 'none'){
+        sides.forEach(side=>{
+          const Side = side.charAt(0).toUpperCase() + side.slice(1);
+          cell.style['border' + Side + 'Style'] = 'none';
+          cell.style['border' + Side + 'Width'] = '0px';
+        });
+        cell.style.borderImageSource = 'none';
+        continue;
+      }
+
+      if(style === 'wavy'){
+        allSides.forEach(side=>{
+          const Side = side.charAt(0).toUpperCase() + side.slice(1);
+          if(sides.includes(side)){
+            cell.style['border' + Side + 'Style'] = 'solid';
+            cell.style['border' + Side + 'Width'] = Math.max(width, 4) + 'px';
+            cell.style['border' + Side + 'Color'] = color;
+          }
+        });
+        cell.style.borderImageSource = wavyBorderImageValue(color);
+        cell.style.borderImageSlice = '50%';
+        cell.style.borderImageRepeat = 'round';
+        cell.style.borderImageWidth = allSides.map(s => sides.includes(s) ? '1' : '0').join(' ');
+      } else {
+        cell.style.borderImageSource = 'none';
+        sides.forEach(side=>{
+          const Side = side.charAt(0).toUpperCase() + side.slice(1);
+          cell.style['border' + Side + 'Style'] = style;
+          cell.style['border' + Side + 'Width'] = width + 'px';
+          cell.style['border' + Side + 'Color'] = color;
+        });
+      }
+    }
+  }
+}
+
+document.querySelectorAll('.border-preset-grid button').forEach(btn=>{
+  btn.addEventListener('click', ()=> applyPresetBorder(btn.dataset.preset));
+  btn.addEventListener('mousedown', (e)=> e.preventDefault());
+});
+
 
 /* --- スマホ表示: サイドバー・スタイルパネルの開閉 --- */
 const sidebarPanel = document.getElementById('sidebarPanel');
@@ -580,8 +1117,20 @@ const templates = {
     <textarea class="embed-code" placeholder="ここにHTMLやJavaScriptのコードを貼り付けてください&#10;例: &lt;script&gt;document.write('こんにちは')&lt;/script&gt;"></textarea>
     <div class="embed-actions"><button type="button" class="embed-apply">プレビューを更新</button></div>
     <div class="embed-preview"></div>
+  </div>`,
+  table: () => `<div class="content">
+    <table class="site-table" style="width:100%;border-collapse:separate;border-spacing:0;border-width:3px;border-style:solid;border-color:#1c1c1a;">
+      <tbody>
+        <tr>${tableCellHTML()}${tableCellHTML()}</tr>
+        <tr>${tableCellHTML()}${tableCellHTML()}</tr>
+      </tbody>
+    </table>
   </div>`
 };
+
+function tableCellHTML(text){
+  return `<td style="border-width:1px;border-style:solid;border-color:#d6d6d2;padding:8px 10px;font-size:14px;">${text || 'セル'}</td>`;
+}
 
 const defaultTexts = {
   heading: '見出しテキスト',
@@ -720,6 +1269,11 @@ pageEl.addEventListener('click', (e)=>{
   }
 
   selectElement(wrap);
+
+  if(wrap.dataset.el === 'table' && e.target.closest('.content') && !tableJustDragged){
+    openTableModal(wrap);
+  }
+  tableJustDragged = false;
 });
 
 function runEmbedPreview(container, code){
@@ -1024,7 +1578,7 @@ function renderStylesPanel(){
     `;
   }
 
-  if(type !== 'image' && type !== 'divider'){
+  if(type !== 'image' && type !== 'divider' && type !== 'table'){
     html += `
       <div class="field">
         <label>文字揃え</label>
@@ -1051,7 +1605,33 @@ function renderStylesPanel(){
     `;
   }
 
-  if(type !== 'image' && type !== 'divider' && type !== 'embed'){
+  if(type === 'table'){
+    const table = selected.querySelector('table');
+    const firstCell = table ? table.querySelector('td, th') : null;
+    const outerCS = table ? getComputedStyle(table) : null;
+    const innerCS = firstCell ? getComputedStyle(firstCell) : null;
+    const outerColor = outerCS ? rgbToHex(outerCS.borderTopColor) : '#1c1c1a';
+    const outerWidth = outerCS ? (parseInt(outerCS.borderTopWidth, 10) || 3) : 3;
+    const innerColor = innerCS ? rgbToHex(innerCS.borderTopColor) : '#d6d6d2';
+    const innerWidth = innerCS ? (parseInt(innerCS.borderTopWidth, 10) || 1) : 1;
+    html += `<div class="empty-hint" style="margin-bottom:14px;">表の枠内をクリックすると拡大表示され、内容や行・列を編集できます。</div>`;
+    html += colorField('外枠の色', 'tableOuterColor', outerColor);
+    html += `
+      <div class="field">
+        <label>外枠の太さ（px）</label>
+        <input type="number" data-style="tableOuterWidth" min="0" max="20" step="1" value="${outerWidth}">
+      </div>
+    `;
+    html += colorField('中の線の色', 'tableInnerColor', innerColor);
+    html += `
+      <div class="field">
+        <label>中の線の太さ（px）</label>
+        <input type="number" data-style="tableInnerWidth" min="0" max="20" step="1" value="${innerWidth}">
+      </div>
+    `;
+  }
+
+  if(type !== 'image' && type !== 'divider' && type !== 'embed' && type !== 'table'){
     html += `
       <div class="field">
         <label>フォント（Googleフォント）</label>
@@ -1321,6 +1901,24 @@ function applyStyle(kind, val, sourceEl){
   if(kind === 'size'){ content.style.fontSize = val; pushHistoryDebounced(); return; }
   if(kind === 'dividerColor'){ content.style.borderTopColor = val; pushHistoryDebounced(); return; }
   if(kind === 'dividerWidth'){ content.style.borderTopWidth = val + 'px'; pushHistoryDebounced(); return; }
+  if(kind === 'tableOuterColor' || kind === 'tableOuterWidth'){
+    const table = content.querySelector('table');
+    if(table){
+      if(kind === 'tableOuterColor') table.style.borderColor = val;
+      else table.style.borderWidth = val + 'px';
+    }
+    pushHistoryDebounced();
+    return;
+  }
+  if(kind === 'tableInnerColor' || kind === 'tableInnerWidth'){
+    const cells = content.querySelectorAll('td, th');
+    cells.forEach(c=>{
+      if(kind === 'tableInnerColor') c.style.borderColor = val;
+      else c.style.borderWidth = val + 'px';
+    });
+    pushHistoryDebounced();
+    return;
+  }
   if(kind === 'font'){
     const font = googleFonts.find(f => f.value === val);
     if(font){
@@ -1335,7 +1933,7 @@ function applyStyle(kind, val, sourceEl){
 }
 
 function labelFor(type){
-  return {heading:'見出し',subheading:'小見出し',paragraph:'段落',image:'画像',button:'ボタン',divider:'区切り線',section:'セクション',embed:'HTML埋め込み',header:'ヘッダー',footer:'フッター'}[type] || type;
+  return {heading:'見出し',subheading:'小見出し',paragraph:'段落',image:'画像',button:'ボタン',divider:'区切り線',section:'セクション',embed:'HTML埋め込み',table:'表',header:'ヘッダー',footer:'フッター'}[type] || type;
 }
 
 function rgbToHex(rgb){
@@ -1350,7 +1948,8 @@ document.addEventListener('mousedown', (e)=>{
     e.target.closest('.element-wrap') ||
     e.target.closest('#stylesPanel') ||
     e.target.closest('#sidebarPanel') ||
-    e.target.closest('.mobile-only-btn')
+    e.target.closest('.mobile-only-btn') ||
+    e.target.closest('#tableModalOverlay')
   );
 });
 
@@ -1360,6 +1959,7 @@ document.addEventListener('click', (e)=>{
   if(e.target.closest('#stylesPanel')) return;
   if(e.target.closest('#sidebarPanel')) return;
   if(e.target.closest('.mobile-only-btn')) return;
+  if(e.target.closest('#tableModalOverlay')) return;
   document.querySelectorAll('.element-wrap.selected').forEach(w=>w.classList.remove('selected'));
   selected = null;
   renderStylesPanel();
@@ -1589,7 +2189,7 @@ pageEl.addEventListener('mousedown', (e)=>{
   const cornerBLHandle = e.target.closest('.resize-handle.corner.bl');
   /* パーツの枠(余白)部分を直接つかんだ場合は、上下左右自由に移動・並べ替えができる。
      .content等の中身をクリックした場合はここには来ない(通常のテキスト編集・選択のため)。
-     ただし画像・HTML埋め込みのプレビューは文字入力がないため、
+     ただし画像・HTML埋め込みのプレビュー・表は文字入力がないため、
      そのもの自体をつかんでも同様にドラッグできるようにする。 */
   let frameWrap = null;
   if(e.target.classList && e.target.classList.contains('element-wrap') && e.target.parentElement === canvas){
@@ -1600,6 +2200,8 @@ pageEl.addEventListener('mousedown', (e)=>{
       if(wrapCandidate.dataset.el === 'image' && e.target.closest('.img-box')){
         frameWrap = wrapCandidate;
       } else if(wrapCandidate.dataset.el === 'embed' && e.target.closest('.embed-preview')){
+        frameWrap = wrapCandidate;
+      } else if(wrapCandidate.dataset.el === 'table' && e.target.closest('.content')){
         frameWrap = wrapCandidate;
       }
     }
@@ -1682,6 +2284,10 @@ pageEl.addEventListener('mousedown', (e)=>{
       let newLeft = startLeft + dx;
       newLeft = Math.max(0, Math.min(newLeft, maxWidth - startWidth));
       setBox(newLeft, startWidth);
+
+      if(wrap.dataset.el === 'table' && (Math.abs(dx) > 4 || Math.abs(ev.clientY - startY) > 4)){
+        tableJustDragged = true;
+      }
 
       if(canReorder){
         const dy = ev.clientY - startY;
@@ -1865,6 +2471,8 @@ ${buildGoogleFontsHeadTags()}<style>
   .embed-el img, .embed-el table, .embed-el video{max-width:100%;}
   .section-el{background:#faf8f4;border-radius:10px;padding:clamp(16px,4vw,24px);margin:10px 0;}
   .divider-el{border:none;border-top:2px solid #e7e3f0;margin:20px 0;}
+  .table-el{overflow-x:auto;margin:10px 0;}
+  .table-el table{border-radius:0;}
   .heading-el{font-size:clamp(24px,6vw,32px);font-weight:800;padding:10px 0;overflow-wrap:break-word;}
   .subheading-el{font-size:clamp(16px,3.6vw,20px);font-weight:600;color:#5a5670;padding:6px 0;overflow-wrap:break-word;}
   .paragraph-el{font-size:clamp(14px,2.4vw,15px);line-height:1.8;padding:8px 0;overflow-wrap:break-word;}
@@ -1998,6 +2606,8 @@ function getCleanCanvasHTML(){
       out += imgBox ? `<div class="image-el"${wrapStyleAttr}>${imgBox.outerHTML}</div>\n` : '';
     } else if(type === 'divider'){
       out += `<hr class="divider-el"${styleAttr}>\n`;
+    } else if(type === 'table'){
+      out += `<div class="table-el"${wrapStyleAttr}>${content.innerHTML}</div>\n`;
     } else if(type === 'button'){
       const href = wrap.dataset.href ? escapeAttr(wrap.dataset.href) : '#';
       const safeContent = stripLiveEditMarkers(stripNestedLinks(content.innerHTML));
