@@ -6,14 +6,14 @@
 <title>作ったサイト一覧</title>
 <style>
   :root{
-    --shell-bg: #17151f;
-    --panel-bg: #201d2b;
-    --panel-bg-2: #262238;
-    --line: #34304a;
-    --text: #e9e6f2;
-    --text-dim: #9d97b5;
-    --accent: #f2a65a;
-    --danger: #e2635a;
+    --shell-bg: #eeeeec;
+    --panel-bg: #ffffff;
+    --panel-bg-2: #f0f0ed;
+    --line: #d6d6d2;
+    --text: #0f0f0d;
+    --text-dim: #6b6b64;
+    --accent: #1642e0;
+    --danger: #c8241a;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
   }
   *{box-sizing:border-box;}
@@ -24,40 +24,49 @@
     display:flex;align-items:center;justify-content:space-between;
     padding:14px 24px;background:var(--panel-bg);border-bottom:1px solid var(--line);
   }
-  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:.02em;}
-  .brand .dot{width:10px;height:10px;border-radius:3px;background:var(--accent);transform:rotate(45deg);}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:.01em;}
+  .brand .dot{width:9px;height:9px;border-radius:2px;background:var(--accent);}
 
   button, .btn{
     font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel-bg-2);
-    color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;transition:.15s;
+    color:var(--text);border-radius:3px;padding:7px 13px;font-size:13px;
     text-decoration:none;display:inline-block;
   }
   button:hover, .btn:hover{border-color:var(--accent);color:var(--accent);}
-  button.primary, .btn.primary{background:var(--accent);border-color:var(--accent);color:#1c1408;font-weight:700;}
-  button.primary:hover, .btn.primary:hover{filter:brightness(1.08);color:#1c1408;}
+  button.primary, .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
+  button.primary:hover, .btn.primary:hover{background:#0f2fa8;border-color:#0f2fa8;color:#fff;}
   button.danger:hover{border-color:var(--danger);color:var(--danger);}
 
   .wrap{max-width:900px;margin:0 auto;padding:32px 24px 80px;}
-  .wrap h1{font-size:20px;margin:0 0 6px;}
+  .wrap h1{font-size:24px;font-weight:800;letter-spacing:-.01em;margin:0 0 6px;}
   .wrap .lead{color:var(--text-dim);font-size:13px;margin:0 0 28px;}
 
   .empty{
-    border:1px dashed var(--line);border-radius:12px;padding:60px 20px;text-align:center;
-    color:var(--text-dim);font-size:14px;
+    border:1px dashed var(--line);border-radius:3px;padding:60px 20px;text-align:center;
+    color:var(--text-dim);font-size:14px;background:var(--panel-bg);
   }
 
-  .site-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+  .site-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
   .site-card{
-    background:var(--panel-bg);border:1px solid var(--line);border-radius:12px;
-    padding:18px;display:flex;flex-direction:column;gap:10px;
+    background:var(--panel-bg);border:1px solid var(--line);border-radius:3px;
+    padding:16px;display:flex;flex-direction:column;gap:10px;
   }
-  .site-card h2{font-size:15px;margin:0;word-break:break-word;}
+  .site-card h2{font-size:15px;margin:0;word-break:break-word;font-weight:700;}
   .site-card .meta{font-size:12px;color:var(--text-dim);}
-  .site-card .actions{display:flex;gap:8px;margin-top:auto;padding-top:8px;}
-  .site-card .actions button, .site-card .actions .btn{flex:1;text-align:center;}
+  .site-card .actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:8px;}
+  .site-card .actions button, .site-card .actions .btn{flex:1 1 calc(50% - 3px);text-align:center;min-width:80px;}
 
   ::-webkit-scrollbar{width:10px;height:10px;}
-  ::-webkit-scrollbar-thumb{background:#332f47;border-radius:6px;}
+  ::-webkit-scrollbar-thumb{background:#c7c7c2;border-radius:3px;}
+
+  @media (max-width: 640px){
+    .topbar{padding:12px 16px;flex-wrap:wrap;gap:10px;}
+    .brand{font-size:14px;}
+    .wrap{padding:20px 16px 60px;}
+    .wrap h1{font-size:20px;}
+    .site-grid{grid-template-columns:1fr;gap:12px;}
+    .site-card .actions button, .site-card .actions .btn{flex:1 1 100%;}
+  }
 </style>
 </head>
 <body>
@@ -116,7 +125,8 @@ function render(){
       <h2>${escapeHTML(site.title || '無題のサイト')}</h2>
       <div class="meta">保存日時: ${formatDate(site.savedAt)}</div>
       <div class="actions">
-        <button type="button" class="open-btn primary">開く</button>
+        <a href="edit.html?site=${encodeURIComponent(site.id)}" class="btn primary open-edit-btn">開く</a>
+        <button type="button" class="open-btn">プレビュー</button>
         <button type="button" class="dl-btn">再ダウンロード</button>
         <button type="button" class="del-btn danger">削除</button>
       </div>
