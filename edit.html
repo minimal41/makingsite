@@ -72,7 +72,7 @@
     transition:box-shadow .15s;
   }
   .page.drag-over{box-shadow:0 20px 60px rgba(0,0,0,.4), 0 0 0 2px var(--accent);}
-  #canvas{min-height:580px;padding:10px;}
+  #canvas{min-height:580px;padding:10px;position:relative;}
   #canvas:empty::before{
     content:"左のパーツをクリック、またはドラッグ＆ドロップしてページに追加してください";
     color:#9a97ad;font-size:14px;display:block;padding:60px 20px;text-align:center;
@@ -82,7 +82,12 @@
     box-shadow:0 0 6px var(--accent);
   }
 
-  .element-wrap{position:relative;margin:4px 0;border:1px solid transparent;border-radius:6px;}
+  .element-wrap{position:relative;margin:4px 0;border:1px solid transparent;border-radius:6px;display:inline-block;vertical-align:top;width:100%;}
+  .element-wrap.el-button{width:auto;max-width:100%;}
+  .side-drop-indicator{
+    position:absolute;width:3px;background:var(--accent);border-radius:2px;
+    box-shadow:0 0 6px var(--accent);pointer-events:none;z-index:10;
+  }
   .element-wrap:hover{border-color:#d8d3ea;}
   .element-wrap.selected{border-color:var(--accent);}
   .element-toolbar{
@@ -141,14 +146,16 @@
   body.moving-x, body.moving-x *{cursor:move !important;user-select:none;}
 
   [data-el] .content{outline:none;padding:6px;border-radius:4px;}
-  [data-el] .content:focus{background:#fdf6ec;}
+  .el-heading .content:focus,
+  .el-subheading .content:focus,
+  .el-paragraph .content:focus{background:#fdf6ec;}
 
   .el-heading .content{font-size:32px;font-weight:800;padding:10px 6px;}
   .el-subheading .content{font-size:20px;font-weight:600;color:#5a5670;padding:6px;}
   .el-paragraph .content{font-size:15px;line-height:1.8;padding:8px 6px;}
   .el-button .content{
     display:inline-block;background:#1c1b29;color:#fff;padding:10px 22px;border-radius:8px;
-    font-weight:700;font-size:14px;margin:6px;
+    font-weight:700;font-size:14px;margin:6px;width:calc(100% - 12px);box-sizing:border-box;
   }
   .el-divider .content{border:none;border-top:2px solid #e7e3f0;margin:20px 0;height:0;}
   .el-image{padding:6px;}
@@ -590,6 +597,8 @@ document.querySelectorAll('[data-add]').forEach(btn=>{
     if(dropIndicator && dropIndicator.parentNode){
       dropIndicator.parentNode.removeChild(dropIndicator);
     }
+    hideSideIndicator();
+    pendingSideDrop = null;
   });
 });
 
@@ -738,6 +747,150 @@ function colorField(label, kind, hex){
   `;
 }
 
+/* ---------- Googleフォント ---------- */
+const googleFonts = [
+  // 日本語向け
+  { group:'日本語', value:'noto-sans-jp', label:'Noto Sans JP（ゴシック）', family:'Noto Sans JP', fallback:'sans-serif' },
+  { group:'日本語', value:'noto-serif-jp', label:'Noto Serif JP（明朝）', family:'Noto Serif JP', fallback:'serif' },
+  { group:'日本語', value:'m-plus-1p', label:'M PLUS 1p', family:'M PLUS 1p', fallback:'sans-serif' },
+  { group:'日本語', value:'m-plus-rounded-1c', label:'M PLUS Rounded 1c（丸ゴシック）', family:'M PLUS Rounded 1c', fallback:'sans-serif' },
+  { group:'日本語', value:'kosugi', label:'Kosugi', family:'Kosugi', fallback:'sans-serif' },
+  { group:'日本語', value:'kosugi-maru', label:'Kosugi Maru（丸ゴシック）', family:'Kosugi Maru', fallback:'sans-serif' },
+  { group:'日本語', value:'sawarabi-gothic', label:'さわらびゴシック', family:'Sawarabi Gothic', fallback:'sans-serif' },
+  { group:'日本語', value:'sawarabi-mincho', label:'さわらび明朝', family:'Sawarabi Mincho', fallback:'serif' },
+  { group:'日本語', value:'zen-kaku-gothic-new', label:'Zen角ゴシックNew', family:'Zen Kaku Gothic New', fallback:'sans-serif' },
+  { group:'日本語', value:'zen-old-mincho', label:'Zen Old Mincho', family:'Zen Old Mincho', fallback:'serif' },
+  { group:'日本語', value:'zen-maru-gothic', label:'Zen丸ゴシック', family:'Zen Maru Gothic', fallback:'sans-serif' },
+  { group:'日本語', value:'zen-kurenaido', label:'Zen紅道', family:'Zen Kurenaido', fallback:'sans-serif' },
+  { group:'日本語', value:'shippori-mincho', label:'しっぽり明朝', family:'Shippori Mincho', fallback:'serif' },
+  { group:'日本語', value:'shippori-antique', label:'Shippori Antique', family:'Shippori Antique', fallback:'sans-serif' },
+  { group:'日本語', value:'biz-udgothic', label:'BIZ UDゴシック', family:'BIZ UDGothic', fallback:'sans-serif' },
+  { group:'日本語', value:'biz-udmincho', label:'BIZ UD明朝', family:'BIZ UDMincho', fallback:'serif' },
+  { group:'日本語', value:'murecho', label:'Murecho', family:'Murecho', fallback:'sans-serif' },
+  { group:'日本語', value:'klee-one', label:'Klee One（手書き風）', family:'Klee One', fallback:'cursive' },
+  { group:'日本語', value:'kaisei-decol', label:'解星 Decol', family:'Kaisei Decol', fallback:'serif' },
+  { group:'日本語', value:'kaisei-opti', label:'解星 Opti', family:'Kaisei Opti', fallback:'serif' },
+  { group:'日本語', value:'kaisei-harunoumi', label:'解星 HarunoUmi', family:'Kaisei HarunoUmi', fallback:'serif' },
+  { group:'日本語', value:'kaisei-tokumin', label:'解星 特明', family:'Kaisei Tokumin', fallback:'serif' },
+  { group:'日本語', value:'yusei-magic', label:'油性マジック', family:'Yusei Magic', fallback:'sans-serif' },
+  { group:'日本語', value:'dela-gothic-one', label:'Dela Gothic One（極太）', family:'Dela Gothic One', fallback:'sans-serif' },
+  { group:'日本語', value:'rocknroll-one', label:'RocknRoll One', family:'RocknRoll One', fallback:'sans-serif' },
+  { group:'日本語', value:'reggae-one', label:'Reggae One（ポップ）', family:'Reggae One', fallback:'sans-serif' },
+  { group:'日本語', value:'hachi-maru-pop', label:'はち丸ポップ（手書き風）', family:'Hachi Maru Pop', fallback:'cursive' },
+  { group:'日本語', value:'yomogi', label:'よもぎ（手書き風）', family:'Yomogi', fallback:'cursive' },
+  { group:'日本語', value:'kiwi-maru', label:'Kiwi丸', family:'Kiwi Maru', fallback:'sans-serif' },
+  { group:'日本語', value:'rampart-one', label:'Rampart One（立体）', family:'Rampart One', fallback:'sans-serif' },
+  { group:'日本語', value:'stick', label:'Stick', family:'Stick', fallback:'sans-serif' },
+  { group:'日本語', value:'dotgothic16', label:'DotGothic16（ドット）', family:'DotGothic16', fallback:'sans-serif' },
+  { group:'日本語', value:'potta-one', label:'Potta One（丸ポップ）', family:'Potta One', fallback:'sans-serif' },
+  // 欧文
+  { group:'欧文', value:'roboto', label:'Roboto', family:'Roboto', fallback:'sans-serif' },
+  { group:'欧文', value:'open-sans', label:'Open Sans', family:'Open Sans', fallback:'sans-serif' },
+  { group:'欧文', value:'lato', label:'Lato', family:'Lato', fallback:'sans-serif' },
+  { group:'欧文', value:'montserrat', label:'Montserrat', family:'Montserrat', fallback:'sans-serif' },
+  { group:'欧文', value:'poppins', label:'Poppins', family:'Poppins', fallback:'sans-serif' },
+  { group:'欧文', value:'nunito', label:'Nunito', family:'Nunito', fallback:'sans-serif' },
+  { group:'欧文', value:'raleway', label:'Raleway', family:'Raleway', fallback:'sans-serif' },
+  { group:'欧文', value:'inter', label:'Inter', family:'Inter', fallback:'sans-serif' },
+  { group:'欧文', value:'merriweather', label:'Merriweather', family:'Merriweather', fallback:'serif' },
+  { group:'欧文', value:'playfair-display', label:'Playfair Display', family:'Playfair Display', fallback:'serif' },
+  { group:'欧文', value:'oswald', label:'Oswald', family:'Oswald', fallback:'sans-serif' },
+  { group:'欧文', value:'source-sans-3', label:'Source Sans 3', family:'Source Sans 3', fallback:'sans-serif' },
+  { group:'欧文', value:'pt-sans', label:'PT Sans', family:'PT Sans', fallback:'sans-serif' },
+  { group:'欧文', value:'rubik', label:'Rubik', family:'Rubik', fallback:'sans-serif' },
+  { group:'欧文', value:'work-sans', label:'Work Sans', family:'Work Sans', fallback:'sans-serif' },
+  { group:'欧文', value:'quicksand', label:'Quicksand', family:'Quicksand', fallback:'sans-serif' },
+  { group:'欧文', value:'mulish', label:'Mulish', family:'Mulish', fallback:'sans-serif' },
+  { group:'欧文', value:'karla', label:'Karla', family:'Karla', fallback:'sans-serif' },
+  { group:'欧文', value:'fira-sans', label:'Fira Sans', family:'Fira Sans', fallback:'sans-serif' },
+  { group:'欧文', value:'barlow', label:'Barlow', family:'Barlow', fallback:'sans-serif' },
+  { group:'欧文', value:'josefin-sans', label:'Josefin Sans', family:'Josefin Sans', fallback:'sans-serif' },
+  { group:'欧文', value:'bitter', label:'Bitter', family:'Bitter', fallback:'serif' },
+  { group:'欧文', value:'libre-baskerville', label:'Libre Baskerville', family:'Libre Baskerville', fallback:'serif' },
+  { group:'欧文', value:'cormorant-garamond', label:'Cormorant Garamond', family:'Cormorant Garamond', fallback:'serif' },
+  { group:'欧文', value:'dm-sans', label:'DM Sans', family:'DM Sans', fallback:'sans-serif' },
+  { group:'欧文', value:'manrope', label:'Manrope', family:'Manrope', fallback:'sans-serif' },
+  { group:'欧文', value:'space-grotesk', label:'Space Grotesk', family:'Space Grotesk', fallback:'sans-serif' },
+  { group:'欧文', value:'archivo', label:'Archivo', family:'Archivo', fallback:'sans-serif' },
+  { group:'欧文', value:'crimson-text', label:'Crimson Text', family:'Crimson Text', fallback:'serif' },
+  { group:'欧文', value:'lora', label:'Lora', family:'Lora', fallback:'serif' },
+  { group:'欧文', value:'comfortaa', label:'Comfortaa', family:'Comfortaa', fallback:'sans-serif' },
+  { group:'欧文', value:'pacifico', label:'Pacifico（手書き風）', family:'Pacifico', fallback:'cursive' },
+  { group:'欧文', value:'caveat', label:'Caveat（手書き風）', family:'Caveat', fallback:'cursive' },
+  { group:'欧文', value:'dancing-script', label:'Dancing Script（手書き風）', family:'Dancing Script', fallback:'cursive' },
+  { group:'欧文', value:'shadows-into-light', label:'Shadows Into Light（手書き風）', family:'Shadows Into Light', fallback:'cursive' },
+  { group:'欧文', value:'bebas-neue', label:'Bebas Neue（縦長太字）', family:'Bebas Neue', fallback:'sans-serif' },
+  { group:'欧文', value:'anton', label:'Anton（極太）', family:'Anton', fallback:'sans-serif' },
+  { group:'欧文', value:'abril-fatface', label:'Abril Fatface（装飾）', family:'Abril Fatface', fallback:'serif' },
+  { group:'欧文', value:'righteous', label:'Righteous', family:'Righteous', fallback:'sans-serif' }
+];
+
+const loadedFontValues = new Set();
+
+function fontCssStack(font){
+  return `"${font.family}", ${font.fallback}`;
+}
+
+function ensureFontLoaded(font){
+  if(!font || loadedFontValues.has(font.value)) return;
+  loadedFontValues.add(font.value);
+  const encodedFamily = font.family.split(' ').join('+');
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${encodedFamily}:wght@400;700&display=swap`;
+  document.head.appendChild(link);
+}
+
+function buildFontOptions(currentValue){
+  let html = `<option value=""${currentValue ? '' : ' selected'}>デフォルト</option>`;
+  let currentGroup = null;
+  googleFonts.forEach(f=>{
+    if(f.group !== currentGroup){
+      if(currentGroup !== null) html += `</optgroup>`;
+      html += `<optgroup label="${f.group}">`;
+      currentGroup = f.group;
+    }
+    html += `<option value="${f.value}"${f.value === currentValue ? ' selected' : ''}>${f.label}</option>`;
+  });
+  if(currentGroup !== null) html += `</optgroup>`;
+  return html;
+}
+
+function currentFontValue(content){
+  if(!content) return '';
+  const ff = content.style.fontFamily || '';
+  if(!ff) return '';
+  const match = googleFonts.find(f => ff.includes(f.family));
+  return match ? match.value : '';
+}
+
+function collectUsedGoogleFonts(){
+  const used = new Map();
+  const contents = [
+    ...canvas.querySelectorAll(':scope > .element-wrap .content'),
+    headerArea.querySelector('.content'),
+    footerArea.querySelector('.content')
+  ];
+  contents.forEach(c=>{
+    if(!c) return;
+    const value = currentFontValue(c);
+    if(!value) return;
+    const font = googleFonts.find(f=>f.value === value);
+    if(font) used.set(font.value, font);
+  });
+  return [...used.values()];
+}
+
+function buildGoogleFontsHeadTags(){
+  const used = collectUsedGoogleFonts();
+  if(used.length === 0) return '';
+  const params = used.map(f => `family=${f.family.split(' ').join('+')}:wght@400;700`).join('&');
+  return `<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?${params}&display=swap" rel="stylesheet">
+`;
+}
+
 function renderStylesPanel(){
   if(!selected){
     stylesPanel.innerHTML = `<h3>スタイル</h3><div class="empty-hint">要素をクリックすると、ここで文字色・背景色・配置などを編集できます。</div>`;
@@ -781,6 +934,16 @@ function renderStylesPanel(){
     `;
   }
 
+  if(type === 'button'){
+    const currentHref = selected.dataset.href || '';
+    html += `
+      <div class="field">
+        <label>リンク先URL（ボタン全体）</label>
+        <input type="text" id="btnHrefInput" placeholder="https://example.com" value="${currentHref.replace(/"/g,'&quot;')}">
+      </div>
+    `;
+  }
+
   if(type !== 'image'){
     html += `
       <div class="field">
@@ -794,6 +957,15 @@ function renderStylesPanel(){
     `;
     html += colorField('文字色', 'color', rgbToHex(cs.color));
     html += colorField('背景色', 'bg', rgbToHex(cs.backgroundColor));
+  }
+
+  if(type !== 'image' && type !== 'divider' && type !== 'embed'){
+    html += `
+      <div class="field">
+        <label>フォント（Googleフォント）</label>
+        <select data-style="font">${buildFontOptions(currentFontValue(content))}</select>
+      </div>
+    `;
   }
 
   if(type === 'heading' || type === 'subheading' || type === 'paragraph' || type === 'button' || type === 'header' || type === 'footer'){
@@ -813,7 +985,7 @@ function renderStylesPanel(){
     `;
   }
 
-  if(type !== 'image' && type !== 'divider'){
+  if(type !== 'image' && type !== 'divider' && type !== 'button'){
     html += `
       <div class="field">
         <label>リンク（文字の一部を選択してから）</label>
@@ -827,24 +999,33 @@ function renderStylesPanel(){
 
   stylesPanel.innerHTML = html;
 
+  const btnHrefInput = document.getElementById('btnHrefInput');
+  if(btnHrefInput){
+    btnHrefInput.addEventListener('input', ()=>{
+      selected.dataset.href = btnHrefInput.value;
+      pushHistoryDebounced();
+    });
+    btnHrefInput.addEventListener('blur', ()=> pushHistory());
+  }
+
   stylesPanel.querySelectorAll('[data-style]').forEach(ctrl=>{
     if(ctrl.tagName === 'BUTTON'){
       ctrl.addEventListener('click', ()=> applyStyle(ctrl.dataset.style, ctrl.dataset.val));
       return;
     }
     if(ctrl.dataset.style === 'size'){
-      ctrl.addEventListener('input', ()=> applyStyle('size', ctrl.value + 'px'));
+      ctrl.addEventListener('input', ()=> applyStyle('size', ctrl.value + 'px', ctrl));
       return;
     }
     if(ctrl.type === 'color'){
       ctrl.addEventListener('input', ()=>{
-        applyStyle(ctrl.dataset.style, ctrl.value);
+        applyStyle(ctrl.dataset.style, ctrl.value, ctrl);
         const pairText = stylesPanel.querySelector(`[data-style-text="${ctrl.dataset.style}"]`);
         if(pairText) pairText.value = ctrl.value;
       });
       return;
     }
-    ctrl.addEventListener('input', ()=> applyStyle(ctrl.dataset.style, ctrl.value));
+    ctrl.addEventListener('input', ()=> applyStyle(ctrl.dataset.style, ctrl.value, ctrl));
   });
 
   stylesPanel.querySelectorAll('[data-style-text]').forEach(txt=>{
@@ -852,7 +1033,7 @@ function renderStylesPanel(){
       let v = txt.value.trim();
       if(v && !v.startsWith('#')) v = '#' + v;
       if(/^#[0-9a-fA-F]{6}$/.test(v)){
-        applyStyle(txt.dataset.styleText, v);
+        applyStyle(txt.dataset.styleText, v, txt);
         const pairColor = stylesPanel.querySelector(`[data-style="${txt.dataset.styleText}"]`);
         if(pairColor) pairColor.value = v;
       }
@@ -947,7 +1128,49 @@ function applySelectionCommand(command, value){
   return true;
 }
 
-function applyStyle(kind, val){
+/* 部分選択への文字サイズ/フォント適用は、以前はexecCommand('fontSize'/'fontName')と
+   目印用のfont[size="7"]タグを使っていたが、既存の別の場所に残っていた同じ目印のタグまで
+   まとめて書き換えてしまうことがあり、これが「サイズの桁を消すと選択箇所より右が
+   見えなくなる（極端に小さくなる）」バグの原因だった。
+   ここでは選択範囲(Range)を直接操作して確実にその範囲だけを<span>で囲む方式にする。
+   同じ操作を続けてタイプしたときは、直前に作ったspanを目印(data-live-edit)で見つけて
+   再利用し、二重三重に入れ子のspanができないようにする。 */
+function getReusableInlineSpan(kind){
+  if(!savedRange || savedRange.collapsed) return null;
+  let node = savedRange.startContainer;
+  node = node.nodeType === 3 ? node.parentElement : node;
+  const span = node && node.closest ? node.closest(`span[data-live-edit="${kind}"]`) : null;
+  if(!span) return null;
+  const full = document.createRange();
+  full.selectNodeContents(span);
+  if(savedRange.compareBoundaryPoints(Range.START_TO_START, full) === 0 &&
+     savedRange.compareBoundaryPoints(Range.END_TO_END, full) === 0){
+    return span;
+  }
+  return null;
+}
+
+function getOrCreateInlineSpan(kind){
+  const existing = getReusableInlineSpan(kind);
+  if(existing) return existing;
+
+  const range = savedRange.cloneRange();
+  const span = document.createElement('span');
+  span.dataset.liveEdit = kind;
+  span.appendChild(range.extractContents());
+  range.insertNode(span);
+
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+  savedRange = newRange.cloneRange();
+  savedRangeContent = selected.querySelector('.content');
+  return span;
+}
+
+function applyStyle(kind, val, sourceEl){
   if(!selected) return;
 
   if(kind === 'objpos'){
@@ -960,22 +1183,31 @@ function applyStyle(kind, val){
   const hasPartialSelection = !!(savedRange && !savedRange.collapsed && savedRangeContent && selected.contains(savedRangeContent));
 
   if(hasPartialSelection){
-    if(kind === 'color'){ applySelectionCommand('foreColor', val); pushHistoryDebounced(); return; }
-    if(kind === 'bg'){ applySelectionCommand('backColor', val); pushHistoryDebounced(); return; }
+    if(kind === 'color'){ applySelectionCommand('foreColor', val); if(sourceEl) sourceEl.focus(); pushHistoryDebounced(); return; }
+    if(kind === 'bg'){ applySelectionCommand('backColor', val); if(sourceEl) sourceEl.focus(); pushHistoryDebounced(); return; }
     if(kind === 'size'){
-      const sel = window.getSelection();
-      sel.removeAllRanges(); sel.addRange(savedRange);
-      document.execCommand('fontSize', false, '7');
-      const content = selected.querySelector('.content');
-      if(content){
-        content.querySelectorAll('font[size="7"]').forEach(f=>{
-          const span = document.createElement('span');
-          span.style.fontSize = val;
-          while(f.firstChild) span.appendChild(f.firstChild);
-          f.parentNode.replaceChild(span, f);
-        });
+      const caretPos = (sourceEl && typeof sourceEl.selectionStart === 'number') ? sourceEl.selectionStart : null;
+      const span = getOrCreateInlineSpan('size');
+      span.style.fontSize = val;
+      if(sourceEl){
+        sourceEl.focus();
+        if(caretPos !== null && sourceEl.setSelectionRange){
+          try{ sourceEl.setSelectionRange(caretPos, caretPos); }catch(e){}
+        }
       }
-      if(sel.rangeCount) savedRange = sel.getRangeAt(0).cloneRange();
+      pushHistoryDebounced();
+      return;
+    }
+    if(kind === 'font'){
+      const font = googleFonts.find(f => f.value === val);
+      const span = getOrCreateInlineSpan('font');
+      if(font){
+        ensureFontLoaded(font);
+        span.style.fontFamily = fontCssStack(font);
+      } else {
+        span.style.fontFamily = '';
+      }
+      if(sourceEl) sourceEl.focus();
       pushHistoryDebounced();
       return;
     }
@@ -987,6 +1219,17 @@ function applyStyle(kind, val){
   if(kind === 'color'){ content.style.color = val; pushHistoryDebounced(); return; }
   if(kind === 'bg'){ content.style.background = val; pushHistoryDebounced(); return; }
   if(kind === 'size'){ content.style.fontSize = val; pushHistoryDebounced(); return; }
+  if(kind === 'font'){
+    const font = googleFonts.find(f => f.value === val);
+    if(font){
+      ensureFontLoaded(font);
+      content.style.fontFamily = fontCssStack(font);
+    } else {
+      content.style.fontFamily = '';
+    }
+    pushHistory();
+    return;
+  }
 }
 
 function labelFor(type){
@@ -1014,6 +1257,8 @@ document.addEventListener('click', (e)=>{
 });
 
 let dropIndicator = null;
+let pendingSideDrop = null;
+let sideIndicatorEl = null;
 
 const bgDesigns = [
   { name: '無地ホワイト', css: '#ffffff' },
@@ -1078,10 +1323,83 @@ function findDropTarget(clientY){
   return null;
 }
 
+/* 幅・位置(%)の基準は「canvasのpaddingを除いた内側の幅」でなければならない。
+   canvas.getBoundingClientRect().width（padding込み）をそのまま基準にすると、
+   幅を変えるたびに実際の描画位置とJS側の計算がわずかにズレていく原因になっていた。 */
+function getCanvasContentBox(){
+  const rect = canvas.getBoundingClientRect();
+  const cs = getComputedStyle(canvas);
+  const padLeft = parseFloat(cs.paddingLeft) || 0;
+  const padRight = parseFloat(cs.paddingRight) || 0;
+  return {
+    left: rect.left + padLeft,
+    right: rect.right - padRight,
+    width: rect.width - padLeft - padRight
+  };
+}
+
+/* 幅を縮めたパーツの右側に余ったスペースがあるかを判定し、
+   あればそこに新しいパーツを横並びで入れられるようにする（ドラッグ追加時のみ）。 */
+const SIDE_DROP_MIN_GAP = 60; // これ以上の余白があれば横並び対象にする
+
+function findSideDropTarget(clientX, clientY){
+  const box = getCanvasContentBox();
+  const wraps = [...canvas.querySelectorAll(':scope > .element-wrap')];
+  let best = null;
+  for(const w of wraps){
+    const rect = w.getBoundingClientRect();
+    if(clientY < rect.top || clientY > rect.bottom) continue; // 同じ行にあるものだけ対象
+    if(clientX <= rect.right) continue; // カーソルがその要素より右側にある場合のみ
+    if(!best || rect.right > best.rect.right) best = { neighbor:w, rect };
+  }
+  if(!best) return null;
+  if(clientX > box.right) return null;
+  const leftover = box.right - best.rect.right;
+  if(leftover < SIDE_DROP_MIN_GAP) return null;
+  return { neighbor: best.neighbor, leftover };
+}
+
+function getSideIndicatorEl(){
+  if(!sideIndicatorEl){
+    sideIndicatorEl = document.createElement('div');
+    sideIndicatorEl.className = 'side-drop-indicator';
+  }
+  return sideIndicatorEl;
+}
+
+function showSideIndicator(sideTarget){
+  const ind = getSideIndicatorEl();
+  const canvasRect = canvas.getBoundingClientRect();
+  const rect = sideTarget.neighbor.getBoundingClientRect();
+  ind.style.left = (rect.right - canvasRect.left + 4) + 'px';
+  ind.style.top = (rect.top - canvasRect.top) + 'px';
+  ind.style.height = rect.height + 'px';
+  if(!ind.parentNode) canvas.appendChild(ind);
+}
+
+function hideSideIndicator(){
+  if(sideIndicatorEl && sideIndicatorEl.parentNode){
+    sideIndicatorEl.parentNode.removeChild(sideIndicatorEl);
+  }
+}
+
 canvas.addEventListener('dragover', (e)=>{
   e.preventDefault();
   e.dataTransfer.dropEffect = 'copy';
   pageEl.classList.add('drag-over');
+
+  const sideTarget = findSideDropTarget(e.clientX, e.clientY);
+  if(sideTarget){
+    pendingSideDrop = sideTarget;
+    if(dropIndicator && dropIndicator.parentNode){
+      dropIndicator.parentNode.removeChild(dropIndicator);
+    }
+    showSideIndicator(sideTarget);
+    return;
+  }
+
+  pendingSideDrop = null;
+  hideSideIndicator();
   const target = findDropTarget(e.clientY);
   const indicator = getIndicator();
   if(target) canvas.insertBefore(indicator, target);
@@ -1089,8 +1407,12 @@ canvas.addEventListener('dragover', (e)=>{
 });
 
 canvas.addEventListener('dragleave', (e)=>{
-  if(e.target === canvas && dropIndicator && dropIndicator.parentNode){
-    dropIndicator.parentNode.removeChild(dropIndicator);
+  if(e.target === canvas){
+    if(dropIndicator && dropIndicator.parentNode){
+      dropIndicator.parentNode.removeChild(dropIndicator);
+    }
+    hideSideIndicator();
+    pendingSideDrop = null;
   }
 });
 
@@ -1098,6 +1420,33 @@ canvas.addEventListener('drop', (e)=>{
   e.preventDefault();
   pageEl.classList.remove('drag-over');
   const type = e.dataTransfer.getData('text/plain');
+
+  if(pendingSideDrop && type && templates[type]){
+    const neighbor = pendingSideDrop.neighbor;
+    hideSideIndicator();
+    if(dropIndicator && dropIndicator.parentNode){
+      dropIndicator.parentNode.removeChild(dropIndicator);
+    }
+
+    const wrap = createBlock(type);
+    canvas.insertBefore(wrap, neighbor.nextSibling);
+
+    const box = getCanvasContentBox();
+    const neighborRect = neighbor.getBoundingClientRect();
+    const widthPx = Math.max(60, box.right - neighborRect.right - 4);
+    const widthPct = (widthPx / box.width * 100).toFixed(2);
+    wrap.style.width = widthPct + '%';
+    wrap.style.marginLeft = '4px';
+    wrap.style.maxWidth = 'none';
+
+    selectElement(wrap);
+    pushHistory();
+    pendingSideDrop = null;
+    return;
+  }
+
+  pendingSideDrop = null;
+  hideSideIndicator();
   const refNode = (dropIndicator && dropIndicator.parentNode) ? dropIndicator.nextElementSibling : null;
   if(dropIndicator && dropIndicator.parentNode){
     dropIndicator.parentNode.removeChild(dropIndicator);
@@ -1121,10 +1470,10 @@ pageEl.addEventListener('mousedown', (e)=>{
   const wrap = (rightHandle || leftHandle || bottomHandle || cornerBRHandle || cornerBLHandle || posHandle).closest('.element-wrap');
   selectElement(wrap);
 
-  const canvasRect = canvas.getBoundingClientRect();
-  const maxWidth = canvasRect.width;
+  const box = getCanvasContentBox();
+  const maxWidth = box.width;
   const wrapRect = wrap.getBoundingClientRect();
-  const startLeft = wrapRect.left - canvasRect.left;
+  const startLeft = wrapRect.left - box.left;
   const startWidth = wrapRect.width;
   const startX = e.clientX;
   const startY = e.clientY;
@@ -1208,7 +1557,7 @@ document.getElementById('downloadBtn').addEventListener('click', ()=>{
     const inlineStyle = content ? content.getAttribute('style') || '' : '';
     const combinedStyle = [wrapStyle, inlineStyle].filter(s => s && s !== 'display: none;' && s !== 'display:none;').join(';');
     const styleAttr = combinedStyle ? ` style="${combinedStyle}"` : '';
-    return `<${tag} class="${tag}-el"${styleAttr}>${content ? content.innerHTML : ''}</${tag}>\n`;
+    return `<${tag} class="${tag}-el"${styleAttr}>${content ? stripLiveEditMarkers(content.innerHTML) : ''}</${tag}>\n`;
   }
 
   const headerHTML = headerFooterHTML('header', headerArea, headerEnabled);
@@ -1253,7 +1602,7 @@ document.getElementById('downloadBtn').addEventListener('click', ()=>{
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHTML(title)}</title>
-<style>
+${buildGoogleFontsHeadTags()}<style>
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;color:#000000;background:${currentBgCSS};min-height:100vh;}
   .page-container{max-width:760px;margin:0 auto;padding:40px 20px;background:transparent;min-height:100vh;}
   h1,h2,p{margin:0 0 4px;}
@@ -1319,6 +1668,32 @@ function escapeHTML(str){
   return div.innerHTML;
 }
 
+function escapeAttr(str){
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* 以前のバージョンで文字の一部にリンクを設定していた場合、公開時にボタンの<a>の中に
+   さらに<a>が入れ子になり、HTMLとして不正になってデザインが崩れる原因になっていた。
+   念のため、ボタンを書き出すときは中に紛れ込んだaタグを取り除く。 */
+/* サイズ・フォントの部分編集時に内部的に使うdata-live-edit目印は、
+   公開するHTMLには不要なので書き出し時に取り除く。 */
+function stripLiveEditMarkers(html){
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  div.querySelectorAll('[data-live-edit]').forEach(el => el.removeAttribute('data-live-edit'));
+  return div.innerHTML;
+}
+
+function stripNestedLinks(html){
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  div.querySelectorAll('a').forEach(a=>{
+    while(a.firstChild) a.parentNode.insertBefore(a.firstChild, a);
+    a.remove();
+  });
+  return div.innerHTML;
+}
+
 function getCleanCanvasHTML(){
   const tagMap = {
     heading: 'h1', subheading: 'h2', paragraph: 'p',
@@ -1354,11 +1729,13 @@ function getCleanCanvasHTML(){
     } else if(type === 'divider'){
       out += `<hr class="divider-el"${wrapStyleAttr}>\n`;
     } else if(type === 'button'){
-      out += `<a href="#" class="btn-el"${styleAttr}>${content.innerHTML}</a>\n`;
+      const href = wrap.dataset.href ? escapeAttr(wrap.dataset.href) : '#';
+      const safeContent = stripLiveEditMarkers(stripNestedLinks(content.innerHTML));
+      out += `<a href="${href}" class="btn-el"${styleAttr}>${safeContent}</a>\n`;
     } else {
       const tag = tagMap[type];
       const cls = classMap[type];
-      out += `<${tag} class="${cls}"${styleAttr}>${content.innerHTML}</${tag}>\n`;
+      out += `<${tag} class="${cls}"${styleAttr}>${stripLiveEditMarkers(content.innerHTML)}</${tag}>\n`;
     }
   });
   return out;
