@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>かんたんサイトビルダー</title>
+<title>サイトメーカー</title>
 <style>
   :root{
     --shell-bg: #eeeeec;
@@ -28,9 +28,61 @@
     padding:10px 18px;background:var(--panel-bg);border-bottom:1px solid var(--line);
     flex-shrink:0;
   }
-  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:.01em;}
+  .brand-area{display:flex;align-items:center;gap:12px;}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:.01em;flex-shrink:0;}
+  .site-title-display{
+    display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--text);
+    border:1px solid transparent;border-radius:3px;padding:5px 8px;
+  }
+  .site-title-display:hover{border-color:var(--line);}
+  .site-title-edit-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:24px;padding:0;font-size:13px;border-radius:3px;
+    border:1px solid var(--line);background:var(--panel-bg-2);color:var(--text-dim);
+  }
+  .site-title-edit-btn:hover{border-color:var(--accent);color:var(--accent);}
   .brand .dot{width:9px;height:9px;border-radius:2px;background:var(--accent);}
+
+  .site-title-modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;
+    align-items:center;justify-content:center;padding:16px;
+  }
+  .site-title-modal-overlay.show{display:flex;}
+  .site-title-modal{
+    background:#fff;border-radius:4px;width:min(90vw, 380px);padding:20px;
+  }
+  .site-title-modal h3{margin:0 0 12px;font-size:14px;font-weight:800;}
+  .site-title-modal input{
+    width:100%;font-size:14px;padding:8px 10px;border:1px solid var(--line);
+    border-radius:3px;box-sizing:border-box;
+  }
+  .site-title-modal input:focus{border-color:var(--accent);}
+  .site-title-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
   .topbar-actions{display:flex;gap:8px;}
+
+  .page-tabs{
+    display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--panel-bg);
+    border-bottom:1px solid var(--line);overflow-x:auto;
+  }
+  .page-tab{
+    display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:3px;
+    border:1px solid var(--line);background:var(--panel-bg-2);color:var(--text-dim);
+    font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;
+  }
+  .page-tab.active{border-color:var(--accent);background:var(--accent-dim);color:var(--text);font-weight:700;}
+  .page-tab-rename{
+    display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+    padding:0;border:none;background:transparent;color:inherit;opacity:.7;border-radius:2px;
+  }
+  .page-tab-rename:hover{opacity:1;background:rgba(0,0,0,.06);}
+  .page-tab-del{
+    display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+    padding:0;border:none;background:transparent;color:inherit;font-size:11px;border-radius:2px;
+  }
+  .page-tab-del:hover{background:var(--danger);color:#fff;}
+  #addPageBtn{
+    padding:6px 12px;font-size:12px;border-radius:3px;flex-shrink:0;
+  }
   button{
     font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel-bg-2);
     color:var(--text);border-radius:3px;padding:7px 13px;font-size:13px;
@@ -353,7 +405,18 @@
 <body>
 
 <div class="topbar">
-  <div class="brand"><span class="dot"></span>かんたんサイトビルダー</div>
+  <div class="brand-area">
+    <div class="brand"><span class="dot"></span>サイトメーカー</div>
+    <div class="site-title-display">
+      <span id="siteTitleText">マイサイト</span>
+      <button type="button" class="site-title-edit-btn" id="siteTitleEditBtn" title="サイトタイトルを編集">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <input type="hidden" id="siteTitle" value="マイサイト">
+  </div>
   <div class="topbar-actions">
     <button id="undoBtn" title="もとに戻す（Ctrl+Z）" disabled>↶</button>
     <button id="redoBtn" title="やり直す（Ctrl+Shift+Z）" disabled>↷</button>
@@ -365,6 +428,8 @@
     <button id="downloadBtn" class="primary">HTMLをダウンロード</button>
   </div>
 </div>
+
+<div class="page-tabs" id="pageTabs"></div>
 
 <div class="workspace">
   <div class="mobile-overlay" id="mobileOverlay"></div>
@@ -382,10 +447,6 @@
 
     <h3 style="margin-top:20px;">ページ設定</h3>
     <div class="page-settings" style="border-bottom:none;margin-bottom:0;padding-bottom:0;">
-      <div class="field">
-        <label>サイトタイトル</label>
-        <input type="text" id="siteTitle" value="マイサイト">
-      </div>
       <div class="field">
         <label>背景デザイン</label>
         <div class="bg-grid" id="bgGrid"></div>
@@ -438,6 +499,17 @@
 
 <input type="file" id="imgInput" accept="image/*" style="display:none;">
 
+<div class="site-title-modal-overlay" id="siteTitleModalOverlay">
+  <div class="site-title-modal">
+    <h3>サイトタイトルを編集</h3>
+    <input type="text" id="siteTitleModalInput" placeholder="サイトタイトル">
+    <div class="site-title-modal-actions">
+      <button type="button" id="siteTitleCancelBtn">キャンセル</button>
+      <button type="button" id="siteTitleSaveBtn" class="primary">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="table-modal-overlay" id="tableModalOverlay">
   <div class="table-modal">
     <div class="table-modal-header">
@@ -485,6 +557,7 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 const canvas = document.getElementById('canvas');
 const pageEl = document.querySelector('.page');
@@ -812,6 +885,42 @@ function wavyBorderImageValue(color){
 }
 
 /* Excelの罫線ボタンのように、選択範囲に対して「全て/外枠/内側/上/下/左/右/なし」を適用する */
+/* 罫線は「セルの辺」ではなく「境界線」単位で考える。
+   ある境界線(例:あるセルの右側=隣のセルの左側)に線を引くときは、
+   どちらか一方(所有者側)にだけ実際の太さ・種類・色を設定し、
+   もう一方は必ず0にしておく。これにより、同じ境界を両側から
+   別々に設定して太さが二重になってしまうことがなくなる。
+   所有者のルール: 表の一番上/一番左の外枠は、その行/列自身の top/left。
+   それ以外(内部の境界)は、必ず「上の行の下側」「左の列の右側」を所有者とする。 */
+function setEdgeStyle(ownerCell, neighborCell, ownerSide, neighborSide, width, style, color, isNone){
+  if(!ownerCell) return;
+  const OwnerSide = ownerSide.charAt(0).toUpperCase() + ownerSide.slice(1);
+
+  if(isNone){
+    ownerCell.style['border' + OwnerSide + 'Style'] = 'none';
+    ownerCell.style['border' + OwnerSide + 'Width'] = '0px';
+    ownerCell.style.borderImageSource = 'none';
+  } else if(style === 'wavy'){
+    ownerCell.style['border' + OwnerSide + 'Style'] = 'solid';
+    ownerCell.style['border' + OwnerSide + 'Width'] = Math.max(width, 4) + 'px';
+    ownerCell.style['border' + OwnerSide + 'Color'] = color;
+    ownerCell.style.borderImageSource = wavyBorderImageValue(color);
+    ownerCell.style.borderImageSlice = '50%';
+    ownerCell.style.borderImageRepeat = 'round';
+  } else {
+    ownerCell.style.borderImageSource = 'none';
+    ownerCell.style['border' + OwnerSide + 'Style'] = style;
+    ownerCell.style['border' + OwnerSide + 'Width'] = width + 'px';
+    ownerCell.style['border' + OwnerSide + 'Color'] = color;
+  }
+
+  if(neighborCell){
+    const NeighborSide = neighborSide.charAt(0).toUpperCase() + neighborSide.slice(1);
+    neighborCell.style['border' + NeighborSide + 'Style'] = 'none';
+    neighborCell.style['border' + NeighborSide + 'Width'] = '0px';
+  }
+}
+
 function applyPresetBorder(preset){
   if(!selAnchor || !selFocus) return;
   const r1 = Math.min(selAnchor.row, selFocus.row), r2 = Math.max(selAnchor.row, selFocus.row);
@@ -825,78 +934,59 @@ function applyPresetBorder(preset){
     width = 3;
     cellBorderWidth.value = width;
   }
+  const isNone = preset === 'none';
 
-  const allSides = ['top', 'right', 'bottom', 'left'];
-
-  for(let r = r1; r <= r2; r++){
-    for(let c = c1; c <= c2; c++){
-      const cell = tableGrid[r] && tableGrid[r][c];
-      if(!cell) continue;
-
-      const isTop = r === r1, isBottom = r === r2, isLeft = c === c1, isRight = c === c2;
-      let sides = [];
-      if(preset === 'all' || preset === 'none'){
-        sides = allSides.slice();
-      } else if(preset === 'outer'){
-        if(isTop) sides.push('top');
-        if(isBottom) sides.push('bottom');
-        if(isLeft) sides.push('left');
-        if(isRight) sides.push('right');
-      } else if(preset === 'inner'){
-        if(!isTop) sides.push('top');
-        if(!isBottom) sides.push('bottom');
-        if(!isLeft) sides.push('left');
-        if(!isRight) sides.push('right');
-      } else if(preset === 'innerH'){
-        if(!isTop) sides.push('top');
-        if(!isBottom) sides.push('bottom');
-      } else if(preset === 'innerV'){
-        if(!isLeft) sides.push('left');
-        if(!isRight) sides.push('right');
-      } else if(preset === 'top' && isTop){
-        sides.push('top');
-      } else if(preset === 'bottom' && isBottom){
-        sides.push('bottom');
-      } else if(preset === 'left' && isLeft){
-        sides.push('left');
-      } else if(preset === 'right' && isRight){
-        sides.push('right');
-      }
-      if(sides.length === 0) continue;
-
-      if(preset === 'none'){
-        sides.forEach(side=>{
-          const Side = side.charAt(0).toUpperCase() + side.slice(1);
-          cell.style['border' + Side + 'Style'] = 'none';
-          cell.style['border' + Side + 'Width'] = '0px';
-        });
-        cell.style.borderImageSource = 'none';
-        continue;
-      }
-
-      if(style === 'wavy'){
-        allSides.forEach(side=>{
-          const Side = side.charAt(0).toUpperCase() + side.slice(1);
-          if(sides.includes(side)){
-            cell.style['border' + Side + 'Style'] = 'solid';
-            cell.style['border' + Side + 'Width'] = Math.max(width, 4) + 'px';
-            cell.style['border' + Side + 'Color'] = color;
-          }
-        });
-        cell.style.borderImageSource = wavyBorderImageValue(color);
-        cell.style.borderImageSlice = '50%';
-        cell.style.borderImageRepeat = 'round';
-        cell.style.borderImageWidth = allSides.map(s => sides.includes(s) ? '1' : '0').join(' ');
+  /* rb行目の"上"の境界線を、colFrom〜colToの範囲で引く。rb=0は表の一番上(外枠)。 */
+  function drawHorizontalBoundary(rb, colFrom, colTo){
+    for(let c = colFrom; c <= colTo; c++){
+      if(rb === 0){
+        const cell = tableGrid[0] && tableGrid[0][c];
+        setEdgeStyle(cell, null, 'top', null, width, style, color, isNone);
       } else {
-        cell.style.borderImageSource = 'none';
-        sides.forEach(side=>{
-          const Side = side.charAt(0).toUpperCase() + side.slice(1);
-          cell.style['border' + Side + 'Style'] = style;
-          cell.style['border' + Side + 'Width'] = width + 'px';
-          cell.style['border' + Side + 'Color'] = color;
-        });
+        const owner = tableGrid[rb - 1] && tableGrid[rb - 1][c];
+        const neighbor = tableGrid[rb] && tableGrid[rb][c];
+        setEdgeStyle(owner, neighbor, 'bottom', 'top', width, style, color, isNone);
       }
     }
+  }
+
+  /* cb列目の"左"の境界線を、rowFrom〜rowToの範囲で引く。cb=0は表の一番左(外枠)。 */
+  function drawVerticalBoundary(cb, rowFrom, rowTo){
+    for(let r = rowFrom; r <= rowTo; r++){
+      if(cb === 0){
+        const cell = tableGrid[r] && tableGrid[r][0];
+        setEdgeStyle(cell, null, 'left', null, width, style, color, isNone);
+      } else {
+        const owner = tableGrid[r] && tableGrid[r][cb - 1];
+        const neighbor = tableGrid[r] && tableGrid[r][cb];
+        setEdgeStyle(owner, neighbor, 'right', 'left', width, style, color, isNone);
+      }
+    }
+  }
+
+  if(preset === 'all' || preset === 'none'){
+    for(let rb = r1; rb <= r2 + 1; rb++) drawHorizontalBoundary(rb, c1, c2);
+    for(let cb = c1; cb <= c2 + 1; cb++) drawVerticalBoundary(cb, r1, r2);
+  } else if(preset === 'outer'){
+    drawHorizontalBoundary(r1, c1, c2);
+    drawHorizontalBoundary(r2 + 1, c1, c2);
+    drawVerticalBoundary(c1, r1, r2);
+    drawVerticalBoundary(c2 + 1, r1, r2);
+  } else if(preset === 'inner'){
+    for(let rb = r1 + 1; rb <= r2; rb++) drawHorizontalBoundary(rb, c1, c2);
+    for(let cb = c1 + 1; cb <= c2; cb++) drawVerticalBoundary(cb, r1, r2);
+  } else if(preset === 'innerH'){
+    for(let rb = r1 + 1; rb <= r2; rb++) drawHorizontalBoundary(rb, c1, c2);
+  } else if(preset === 'innerV'){
+    for(let cb = c1 + 1; cb <= c2; cb++) drawVerticalBoundary(cb, r1, r2);
+  } else if(preset === 'top'){
+    drawHorizontalBoundary(r1, c1, c2);
+  } else if(preset === 'bottom'){
+    drawHorizontalBoundary(r2 + 1, c1, c2);
+  } else if(preset === 'left'){
+    drawVerticalBoundary(c1, r1, r2);
+  } else if(preset === 'right'){
+    drawVerticalBoundary(c2 + 1, r1, r2);
   }
 }
 
@@ -963,7 +1053,160 @@ let footerEnabled = false;
 const headerArea = document.getElementById('headerArea');
 const footerArea = document.getElementById('footerArea');
 
-document.getElementById('siteTitle').addEventListener('input', ()=> pushHistoryDebounced());
+/* --- 複数ページ管理 --- */
+let pages = [{id: 'page-1', name: 'ホーム', canvasHTML: ''}];
+let currentPageId = 'page-1';
+const pageTabsEl = document.getElementById('pageTabs');
+
+function getCurrentPage(){
+  return pages.find(p => p.id === currentPageId) || pages[0];
+}
+
+function saveCurrentPageContent(){
+  const p = getCurrentPage();
+  if(p) p.canvasHTML = canvas.innerHTML;
+}
+
+function renderPageTabs(){
+  pageTabsEl.innerHTML = pages.map(p => `
+    <div class="page-tab${p.id === currentPageId ? ' active' : ''}" data-page-id="${p.id}">
+      <span class="page-tab-name">${escapeHTML(p.name)}</span>
+      <button type="button" class="page-tab-rename" data-page-id="${p.id}" title="ページ名を変更">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      ${pages.length > 1 ? `<button type="button" class="page-tab-del" data-page-id="${p.id}" title="このページを削除">✕</button>` : ''}
+    </div>
+  `).join('') + `<button type="button" id="addPageBtn" title="新しいページを追加">＋ ページを追加</button>`;
+}
+
+function switchToPage(id){
+  if(id === currentPageId) return;
+  saveCurrentPageContent();
+  currentPageId = id;
+  const p = getCurrentPage();
+  canvas.innerHTML = p ? p.canvasHTML : '';
+  selected = null;
+  renderStylesPanel();
+  history = [captureSnapshot()];
+  historyIndex = 0;
+  updateUndoRedoButtons();
+  renderPageTabs();
+}
+
+function addPage(){
+  saveCurrentPageContent();
+  const name = prompt('新しいページの名前を入力してください', `ページ${pages.length + 1}`);
+  if(name === null) return;
+  const id = 'page-' + Date.now();
+  pages.push({id, name: name.trim() || `ページ${pages.length + 1}`, canvasHTML: ''});
+  currentPageId = id;
+  canvas.innerHTML = '';
+  selected = null;
+  renderStylesPanel();
+  history = [captureSnapshot()];
+  historyIndex = 0;
+  updateUndoRedoButtons();
+  renderPageTabs();
+}
+
+function deletePage(id){
+  if(pages.length <= 1){
+    alert('ページは最低1つ必要です。');
+    return;
+  }
+  const page = pages.find(p => p.id === id);
+  if(!page) return;
+  if(!confirm(`「${page.name}」を削除します。よろしいですか？`)) return;
+
+  const wasCurrent = id === currentPageId;
+  pages = pages.filter(p => p.id !== id);
+
+  if(wasCurrent){
+    currentPageId = pages[0].id;
+    canvas.innerHTML = pages[0].canvasHTML;
+    selected = null;
+    renderStylesPanel();
+    history = [captureSnapshot()];
+    historyIndex = 0;
+    updateUndoRedoButtons();
+  }
+  renderPageTabs();
+}
+
+function renamePage(id){
+  const page = pages.find(p => p.id === id);
+  if(!page) return;
+  const name = prompt('ページ名を変更', page.name);
+  if(name === null) return;
+  page.name = name.trim() || page.name;
+  renderPageTabs();
+}
+
+pageTabsEl.addEventListener('click', (e)=>{
+  const delBtn = e.target.closest('.page-tab-del');
+  if(delBtn){
+    e.stopPropagation();
+    deletePage(delBtn.dataset.pageId);
+    return;
+  }
+  const renameBtn = e.target.closest('.page-tab-rename');
+  if(renameBtn){
+    e.stopPropagation();
+    renamePage(renameBtn.dataset.pageId);
+    return;
+  }
+  const addBtn = e.target.closest('#addPageBtn');
+  if(addBtn){
+    addPage();
+    return;
+  }
+  const tab = e.target.closest('.page-tab');
+  if(tab) switchToPage(tab.dataset.pageId);
+});
+pageTabsEl.addEventListener('dblclick', (e)=>{
+  const tab = e.target.closest('.page-tab');
+  if(tab) renamePage(tab.dataset.pageId);
+});
+
+renderPageTabs();
+
+const siteTitleHidden = document.getElementById('siteTitle');
+const siteTitleText = document.getElementById('siteTitleText');
+const siteTitleEditBtn = document.getElementById('siteTitleEditBtn');
+const siteTitleModalOverlay = document.getElementById('siteTitleModalOverlay');
+const siteTitleModalInput = document.getElementById('siteTitleModalInput');
+const siteTitleCancelBtn = document.getElementById('siteTitleCancelBtn');
+const siteTitleSaveBtn = document.getElementById('siteTitleSaveBtn');
+
+function openSiteTitleModal(){
+  siteTitleModalInput.value = siteTitleHidden.value;
+  siteTitleModalOverlay.classList.add('show');
+  siteTitleModalInput.focus();
+  siteTitleModalInput.select();
+}
+function closeSiteTitleModal(){
+  siteTitleModalOverlay.classList.remove('show');
+}
+function saveSiteTitle(){
+  const newVal = siteTitleModalInput.value.trim() || 'マイサイト';
+  siteTitleHidden.value = newVal;
+  siteTitleText.textContent = newVal;
+  pushHistoryDebounced();
+  closeSiteTitleModal();
+}
+
+siteTitleEditBtn.addEventListener('click', openSiteTitleModal);
+siteTitleCancelBtn.addEventListener('click', closeSiteTitleModal);
+siteTitleSaveBtn.addEventListener('click', saveSiteTitle);
+siteTitleModalOverlay.addEventListener('mousedown', (e)=>{
+  if(e.target === siteTitleModalOverlay) closeSiteTitleModal();
+});
+siteTitleModalInput.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ e.preventDefault(); saveSiteTitle(); }
+  if(e.key === 'Escape'){ closeSiteTitleModal(); }
+});
 
 document.getElementById('headerToggle').addEventListener('change', (e)=>{
   headerEnabled = e.target.checked;
@@ -1041,7 +1284,20 @@ function restoreSnapshot(snap){
   savedRange = null;
   savedRangeContent = null;
 
-  canvas.innerHTML = snap.canvas;
+  if(snap.pages && snap.pages.length){
+    /* サイト一覧からの読み込みなど、複数ページの状態を含むスナップショット */
+    pages = JSON.parse(JSON.stringify(snap.pages));
+    currentPageId = snap.currentPageId || pages[0].id;
+    const curPage = pages.find(p => p.id === currentPageId) || pages[0];
+    canvas.innerHTML = curPage.canvasHTML;
+  } else {
+    /* 通常のUndo/Redo用スナップショット。現在のページの内容だけ同期する。 */
+    canvas.innerHTML = snap.canvas;
+    const curPage = getCurrentPage();
+    if(curPage) curPage.canvasHTML = snap.canvas;
+  }
+  renderPageTabs();
+
   headerArea.querySelector('.content').innerHTML = snap.header;
   footerArea.querySelector('.content').innerHTML = snap.footer;
 
@@ -1063,10 +1319,19 @@ function restoreSnapshot(snap){
   document.getElementById('scrollTopColorText').value = scrollTopColor;
 
   document.getElementById('siteTitle').value = snap.siteTitle;
+  siteTitleText.textContent = snap.siteTitle || 'マイサイト';
 
   renderStylesPanel();
   isRestoring = false;
   updateUndoRedoButtons();
+}
+
+function captureFullSiteState(){
+  saveCurrentPageContent();
+  const snap = captureSnapshot();
+  snap.pages = JSON.parse(JSON.stringify(pages));
+  snap.currentPageId = currentPageId;
+  return snap;
 }
 
 function undo(){
@@ -2402,9 +2667,9 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
   }
 });
 
-document.getElementById('downloadBtn').addEventListener('click', ()=>{
-  const title = document.getElementById('siteTitle').value || 'マイサイト';
-  const bodyContent = getCleanCanvasHTML();
+document.getElementById('downloadBtn').addEventListener('click', async ()=>{
+  saveCurrentPageContent();
+  const siteTitle = document.getElementById('siteTitle').value || 'マイサイト';
 
   function headerFooterHTML(tag, wrapEl, enabled){
     if(!enabled) return '';
@@ -2452,12 +2717,13 @@ document.getElementById('downloadBtn').addEventListener('click', ()=>{
 })();
 <` + `/script>` : '';
 
-  const output = `<!DOCTYPE html>
+  function buildPageOutputHTML(pageTitle, bodyContent){
+    return `<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHTML(title)}</title>
+<title>${escapeHTML(pageTitle)}</title>
 ${buildGoogleFontsHeadTags()}<style>
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;color:#000000;background:${currentBgCSS};min-height:100vh;}
   .page-container{width:100%;margin:0 auto;padding:clamp(20px,5vw,40px) clamp(14px,4vw,20px);background:transparent;min-height:100vh;box-sizing:border-box;}
@@ -2504,18 +2770,50 @@ ${scrollTopHTML}
 ${scrollTopScript}
 </body>
 </html>`;
+  }
 
-  const blob = new Blob([output], {type:'text/html'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = (title.trim() || 'site') + '.html';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  function safeFileName(name){
+    return (name || 'page').replace(/[\\/:*?"<>|]/g, '').trim() || 'page';
+  }
 
-  saveSiteToList(title, output);
+  /* 各ページの本文HTMLを、いまのcanvasの中身を一時的に切り替えながら生成する。
+     ページの切り替えが終わったら、必ず今表示していたページの内容に戻す。 */
+  const originalCanvasHTML = canvas.innerHTML;
+  const pageOutputs = pages.map((page, i)=>{
+    canvas.innerHTML = page.canvasHTML;
+    const bodyContent = getCleanCanvasHTML();
+    const pageTitle = pages.length === 1 ? siteTitle : (i === 0 ? siteTitle : `${siteTitle}｜${page.name}`);
+    const output = buildPageOutputHTML(pageTitle, bodyContent);
+    const filename = i === 0 ? 'index.html' : safeFileName(page.name) + '.html';
+    return {filename, output};
+  });
+  canvas.innerHTML = originalCanvasHTML;
+
+  if(pageOutputs.length === 1){
+    const blob = new Blob([pageOutputs[0].output], {type: 'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (siteTitle.trim() || 'site') + '.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } else {
+    const zip = new JSZip();
+    pageOutputs.forEach(p => zip.file(p.filename, p.output));
+    const zipBlob = await zip.generateAsync({type: 'blob'});
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (siteTitle.trim() || 'site') + '.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  saveSiteToList(siteTitle, pageOutputs[0].output);
 });
 
 function saveSiteToList(title, html){
@@ -2530,7 +2828,7 @@ function saveSiteToList(title, html){
     title: title,
     savedAt: new Date().toISOString(),
     html: html,
-    state: captureSnapshot()
+    state: captureFullSiteState()
   });
 
   try{

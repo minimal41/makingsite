@@ -78,7 +78,7 @@
 
 <div class="wrap">
   <h1>これまでに作ったサイト</h1>
-  <p class="lead">「かんたんサイトビルダー（edit.html）」でHTMLをダウンロードするたびに、このブラウザに一覧として保存されます。※このブラウザ・この端末でのみ表示されます。</p>
+  <p class="lead">「サイトメーカー（edit.html）」でHTMLをダウンロードするたびに、このブラウザに一覧として保存されます。※このブラウザ・この端末でのみ表示されます。</p>
 
   <div id="siteList"></div>
 </div>
@@ -116,7 +116,7 @@ function render(){
   const sites = loadSites();
 
   if(sites.length === 0){
-    container.innerHTML = `<div class="empty">まだサイトが保存されていません。<br>「かんたんサイトビルダー」でサイトを作ってダウンロードすると、ここに表示されます。</div>`;
+    container.innerHTML = `<div class="empty">まだサイトが保存されていません。<br>「サイトメーカー」でサイトを作ってダウンロードすると、ここに表示されます。</div>`;
     return;
   }
 
