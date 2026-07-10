@@ -60,6 +60,22 @@
   .site-title-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
   .topbar-actions{display:flex;gap:8px;}
 
+  .auth-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    padding:8px 18px;background:var(--panel-bg-2);border-bottom:1px solid var(--line);font-size:13px;
+    flex-shrink:0;
+  }
+  .auth-status{color:var(--text-dim);}
+  .auth-form{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .auth-form input[type=email]{
+    font-family:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:3px;min-width:220px;
+  }
+  .auth-form input[type=email]:focus{border-color:var(--accent);outline:none;}
+  @media (max-width: 860px){
+    .auth-bar{padding:8px 12px;}
+    .auth-form input[type=email]{min-width:0;flex:1 1 auto;}
+  }
+
   .page-tabs{
     display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--panel-bg);
     border-bottom:1px solid var(--line);overflow-x:auto;
@@ -429,6 +445,18 @@
   </div>
 </div>
 
+<div class="auth-bar" id="authBar">
+  <div id="authStatus" class="auth-status">読み込み中…</div>
+  <div id="authLoggedOut" class="auth-form" style="display:none;">
+    <input type="email" id="authEmail" placeholder="メールアドレス" autocomplete="email">
+    <button type="button" id="authSendBtn" class="primary">ログインリンクを送る</button>
+  </div>
+  <div id="authLoggedIn" class="auth-form" style="display:none;">
+    <span id="authEmailDisplay"></span>
+    <button type="button" id="authLogoutBtn">ログアウト</button>
+  </div>
+</div>
+
 <div class="page-tabs" id="pageTabs"></div>
 
 <div class="workspace">
@@ -558,7 +586,53 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+/* ▼▼▼ ここを自分のSupabaseプロジェクトの値に書き換えてください（index.htmlと同じ値） ▼▼▼ */
+const SUPABASE_URL = 'https://bhbmhcnabrdsxgaigcks.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoYm1oY25hYnJkc3hnYWlnY2tzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjUwNjQsImV4cCI6MjA5OTIwMTA2NH0.jnFLGtNHWEeXUipUYBW6GID-CoD1o4a9bfQQPfdlX1Y';
+/* ▲▲▲ ここまで ▲▲▲ */
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentSession = null;
+
+function renderAuthUI(session){
+  const loggedOutEl = document.getElementById('authLoggedOut');
+  const loggedInEl = document.getElementById('authLoggedIn');
+  document.getElementById('authStatus').style.display = 'none';
+  if(session){
+    loggedOutEl.style.display = 'none';
+    loggedInEl.style.display = 'flex';
+    document.getElementById('authEmailDisplay').textContent = session.user.email;
+  } else {
+    loggedInEl.style.display = 'none';
+    loggedOutEl.style.display = 'flex';
+  }
+}
+
+document.getElementById('authSendBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('authEmail').value.trim();
+  if(!email){ alert('メールアドレスを入力してください'); return; }
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+  if(error){
+    alert('ログインリンクの送信に失敗しました: ' + error.message);
+  } else {
+    alert('ログイン用のリンクをメールに送信しました。メール内のリンクを開いてください。');
+  }
+});
+
+document.getElementById('authLogoutBtn').addEventListener('click', async ()=>{
+  await supabase.auth.signOut();
+});
+
+supabase.auth.onAuthStateChange((_event, session)=>{
+  currentSession = session;
+  renderAuthUI(session);
+});
+
 const canvas = document.getElementById('canvas');
 const pageEl = document.querySelector('.page');
 
@@ -891,10 +965,23 @@ function wavyBorderImageValue(color){
    もう一方は必ず0にしておく。これにより、同じ境界を両側から
    別々に設定して太さが二重になってしまうことがなくなる。
    所有者のルール: 表の一番上/一番左の外枠は、その行/列自身の top/left。
-   それ以外(内部の境界)は、必ず「上の行の下側」「左の列の右側」を所有者とする。 */
+   それ以外(内部の境界)は、必ず「上の行の下側」「左の列の右側」を所有者とする。
+
+   破線・点線は、元のデザインでは境界の両側のセルがそれぞれ独立に同じ太さの
+   線を引いており、隣接セルのある内部の境界線は指定した太さの2倍の厚みで
+   表示されていた。境界線ごとに所有者側のセルだけが実際に線を引く今の方式で
+   同じ見た目に近づけるため、隣接セルがある境界に限り、線の太さそのものを
+   2倍にして描く(表の外周のように隣接セルが無い境界は、元から片側にしか
+   線が無かったため、そのままの太さにする)。
+   ※ border-imageで模様の大きさと太さを独立に制御する方法も検討したが、
+   1つのセルの4辺すべてに幅のある線がある状態(「全て」プリセットなど)では
+   border-image-sliceの仕組み上、線が全く表示されなくなる不具合が発生する
+   ため、確実に表示されるこの方法を採用している。 */
 function setEdgeStyle(ownerCell, neighborCell, ownerSide, neighborSide, width, style, color, isNone){
   if(!ownerCell) return;
   const OwnerSide = ownerSide.charAt(0).toUpperCase() + ownerSide.slice(1);
+  const isDashedOrDotted = (style === 'dashed' || style === 'dotted');
+  const drawWidth = (!isNone && isDashedOrDotted && neighborCell) ? width * 2 : width;
 
   if(isNone){
     ownerCell.style['border' + OwnerSide + 'Style'] = 'none';
@@ -910,7 +997,7 @@ function setEdgeStyle(ownerCell, neighborCell, ownerSide, neighborSide, width, s
   } else {
     ownerCell.style.borderImageSource = 'none';
     ownerCell.style['border' + OwnerSide + 'Style'] = style;
-    ownerCell.style['border' + OwnerSide + 'Width'] = width + 'px';
+    ownerCell.style['border' + OwnerSide + 'Width'] = drawWidth + 'px';
     ownerCell.style['border' + OwnerSide + 'Color'] = color;
   }
 
@@ -1357,6 +1444,11 @@ document.getElementById('undoBtn').addEventListener('click', undo);
 document.getElementById('redoBtn').addEventListener('click', redo);
 
 document.addEventListener('keydown', (e)=>{
+  /* 表編集モーダルを開いている間はCtrl+Zをキャンバス全体のUndoに使わせない。
+     モーダルの裏でキャンバスの中身が丸ごと巻き戻ると、モーダル側は
+     切り離された古い表を編集し続けることになり、閉じたときに編集内容が
+     消えてしまうバグになっていた。 */
+  if(tableModalOverlay.classList.contains('show')) return;
   const key = e.key.toLowerCase();
   if((e.ctrlKey || e.metaKey) && key === 'z' && e.shiftKey){
     e.preventDefault();
@@ -1575,7 +1667,17 @@ pageEl.addEventListener('focusout', (e)=>{
 });
 
 pageEl.addEventListener('input', (e)=>{
-  if(!e.target.classList || !e.target.classList.contains('content')) return;
+  if(!e.target.classList) return;
+  /* textareaの.valueはinnerHTML化(保存・Undo・ページ切替・ダウンロード時に使用)に
+     反映されないため、変更のたびに子テキストとしても同期しておく。
+     これをしないと、埋め込みHTMLの入力内容がUndoやページ切替・ダウンロード時に
+     消えてしまうバグになっていた。 */
+  if(e.target.classList.contains('embed-code')){
+    e.target.textContent = e.target.value;
+    pushHistoryDebounced();
+    return;
+  }
+  if(!e.target.classList.contains('content')) return;
   if(e.target.getAttribute('contenteditable') !== 'true') return;
   pushHistoryDebounced();
 });
@@ -1590,17 +1692,20 @@ imgInput.addEventListener('change', (e)=>{
     attachHandles(wrap, 'image');
     selectElement(wrap);
 
+    /* 画像のアップロードは1回の操作なので、Undoの単位も1回分にまとめる。
+       高さの自動計算(読み込み完了後)を待ってから1回だけ履歴に積む。 */
     const tempImg = new Image();
     tempImg.onload = ()=>{
       const imgBox = wrap.querySelector('.img-box');
-      if(!imgBox || !tempImg.naturalWidth || !tempImg.naturalHeight) return;
-      const boxWidth = imgBox.getBoundingClientRect().width;
-      const ratio = tempImg.naturalHeight / tempImg.naturalWidth;
-      imgBox.style.height = Math.round(boxWidth * ratio) + 'px';
+      if(imgBox && tempImg.naturalWidth && tempImg.naturalHeight){
+        const boxWidth = imgBox.getBoundingClientRect().width;
+        const ratio = tempImg.naturalHeight / tempImg.naturalWidth;
+        imgBox.style.height = Math.round(boxWidth * ratio) + 'px';
+      }
       pushHistory();
     };
+    tempImg.onerror = ()=> pushHistory();
     tempImg.src = ev.target.result;
-    pushHistory();
   };
   reader.readAsDataURL(file);
   imgInput.value = '';
@@ -1776,6 +1881,19 @@ function collectUsedGoogleFonts(){
     if(!value) return;
     const font = googleFonts.find(f=>f.value === value);
     if(font) used.set(font.value, font);
+  });
+  /* 文字の一部だけにフォントを指定した場合、その指定は.content自体ではなく
+     内部のspan(data-live-edit="font")に付くため、上のチェックだけでは
+     見つからず、書き出したページにGoogleフォントの読み込みタグが入らないまま
+     になってしまう。部分指定のspanも探して漏れなく拾う。 */
+  const spanContainers = [canvas, headerArea, footerArea].filter(Boolean);
+  spanContainers.forEach(container=>{
+    container.querySelectorAll('span[data-live-edit="font"]').forEach(span=>{
+      const value = currentFontValue(span);
+      if(!value) return;
+      const font = googleFonts.find(f=>f.value === value);
+      if(font) used.set(font.value, font);
+    });
   });
   return [...used.values()];
 }
@@ -2202,9 +2320,16 @@ function labelFor(type){
 }
 
 function rgbToHex(rgb){
-  if(!rgb || rgb.indexOf('rgb') === -1) return '#000000';
-  const nums = rgb.match(/\d+/g).map(Number);
-  return '#' + nums.slice(0,3).map(n=>n.toString(16).padStart(2,'0')).join('');
+  if(!rgb || rgb.indexOf('rgb') === -1) return '#ffffff';
+  const parts = rgb.match(/[\d.]+/g);
+  if(!parts) return '#ffffff';
+  const nums = parts.map(Number);
+  /* 背景色などが未設定の要素はrgba(0,0,0,0)(透明)になるが、そのままだと
+     「黒が設定されている」ように見えてしまうため、透明は白として扱う。
+     (input[type=color]は透明を表現できないため) */
+  const alpha = nums.length > 3 ? nums[3] : 1;
+  if(alpha === 0) return '#ffffff';
+  return '#' + nums.slice(0,3).map(n=>Math.round(n).toString(16).padStart(2,'0')).join('');
 }
 
 let mouseDownInKeepArea = false;
@@ -2794,47 +2919,62 @@ ${scrollTopScript}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = (siteTitle.trim() || 'site') + '.html';
+    a.download = safeFileName(siteTitle.trim() || 'site') + '.html';
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
   } else {
-    const zip = new JSZip();
-    pageOutputs.forEach(p => zip.file(p.filename, p.output));
-    const zipBlob = await zip.generateAsync({type: 'blob'});
-    const url = URL.createObjectURL(zipBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = (siteTitle.trim() || 'site') + '.zip';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    if(typeof JSZip === 'undefined'){
+      alert('複数ページのダウンロードに必要なファイルの読み込みに失敗しました。インターネット接続を確認のうえ、ページを再読み込みしてからもう一度お試しください。');
+      return;
+    }
+    try{
+      const zip = new JSZip();
+      pageOutputs.forEach(p => zip.file(p.filename, p.output));
+      const zipBlob = await zip.generateAsync({type: 'blob'});
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = safeFileName(siteTitle.trim() || 'site') + '.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }catch(err){
+      console.warn('ZIPファイルの作成に失敗しました', err);
+      alert('ZIPファイルの作成に失敗しました。もう一度お試しください。');
+      return;
+    }
   }
 
-  saveSiteToList(siteTitle, pageOutputs[0].output);
+  await saveSiteToList(siteTitle, pageOutputs[0].output);
 });
 
-function saveSiteToList(title, html){
-  let list = [];
-  try{
-    const raw = localStorage.getItem('mySites');
-    if(raw) list = JSON.parse(raw);
-  }catch(e){ list = []; }
+async function saveSiteToList(title, html){
+  if(!currentSession){
+    alert('ダウンロードは完了しましたが、ログインしていないため「サイト一覧」への保存はできませんでした。上のログインバーからログインしてから再度ダウンロードしてください。');
+    return;
+  }
 
-  list.push({
-    id: 'site-' + Date.now(),
+  const siteId = new URLSearchParams(location.search).get('site');
+  const row = {
     title: title,
-    savedAt: new Date().toISOString(),
     html: html,
     state: captureFullSiteState()
-  });
+  };
 
-  try{
-    localStorage.setItem('mySites', JSON.stringify(list));
-  }catch(e){
-    console.warn('サイト一覧への保存に失敗しました（保存容量の上限の可能性があります）', e);
+  let error;
+  if(siteId){
+    // すでに保存済みのサイトを開いて編集した場合は、同じ行を上書き更新する
+    ({ error } = await supabase.from('sites').update(row).eq('id', siteId));
+  } else {
+    ({ error } = await supabase.from('sites').insert(row));
+  }
+
+  if(error){
+    console.warn('サイト一覧への保存に失敗しました', error);
+    alert('ダウンロードは完了しましたが、「サイト一覧」への保存に失敗しました: ' + error.message);
   }
 }
 
@@ -2919,29 +3059,45 @@ function getCleanCanvasHTML(){
   return out;
 }
 
-(function initFromSavedSite(){
+async function initFromSavedSite(){
   const params = new URLSearchParams(location.search);
   const siteId = params.get('site');
 
   if(siteId){
-    try{
-      const raw = localStorage.getItem('mySites');
-      const list = raw ? JSON.parse(raw) : [];
-      const entry = list.find(s => s.id === siteId);
-      if(entry && entry.state){
-        restoreSnapshot(entry.state);
-      } else if(entry){
-        alert('このサイトは以前のバージョンで保存されたため、編集画面では開けません。「プレビュー」または「再ダウンロード」をご利用ください。');
+    // ログイン確認が済むまで待つ（ページ読み込み直後はセッション確定前のことがあるため）
+    const { data: { session } } = await supabase.auth.getSession();
+    currentSession = session;
+    renderAuthUI(session);
+
+    if(!session){
+      alert('このサイトを開くにはログインが必要です。上のログインバーからログインしてください。');
+    } else {
+      try{
+        const { data: entry, error } = await supabase
+          .from('sites')
+          .select('state')
+          .eq('id', siteId)
+          .single();
+
+        if(error){
+          alert('サイトの読み込みに失敗しました: ' + error.message);
+        } else if(entry && entry.state){
+          restoreSnapshot(entry.state);
+        } else {
+          alert('このサイトは以前のバージョンで保存されたため、編集画面では開けません。「プレビュー」または「再ダウンロード」をご利用ください。');
+        }
+      }catch(e){
+        console.warn('サイトの読み込みに失敗しました', e);
       }
-    }catch(e){
-      console.warn('サイトの読み込みに失敗しました', e);
     }
   }
 
   history = [captureSnapshot()];
   historyIndex = 0;
   updateUndoRedoButtons();
-})();
+}
+
+initFromSavedSite();
 </script>
 
 </body>
