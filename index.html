@@ -117,7 +117,7 @@ const SUPABASE_URL = 'https://bhbmhcnabrdsxgaigcks.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoYm1oY25hYnJkc3hnYWlnY2tzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjUwNjQsImV4cCI6MjA5OTIwMTA2NH0.jnFLGtNHWEeXUipUYBW6GID-CoD1o4a9bfQQPfdlX1Y';
 /* ▲▲▲ ここまで ▲▲▲ */
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentSession = null;
 let cachedSites = [];
@@ -142,7 +142,7 @@ function renderAuthUI(session){
 document.getElementById('authSendBtn').addEventListener('click', async ()=>{
   const email = document.getElementById('authEmail').value.trim();
   if(!email){ alert('メールアドレスを入力してください'); return; }
-  const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabaseClient.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: window.location.href }
   });
@@ -154,10 +154,10 @@ document.getElementById('authSendBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('authLogoutBtn').addEventListener('click', async ()=>{
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
 });
 
-supabase.auth.onAuthStateChange((_event, session)=>{
+supabaseClient.auth.onAuthStateChange((_event, session)=>{
   currentSession = session;
   renderAuthUI(session);
   render();
@@ -169,7 +169,7 @@ async function loadSites(){
     cachedSites = [];
     return [];
   }
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('sites')
     .select('id, title, html, state, created_at')
     .order('created_at', { ascending: false });
@@ -252,7 +252,7 @@ async function render(){
 
     card.querySelector('.del-btn').addEventListener('click', async ()=>{
       if(!confirm('この一覧からサイトを削除します。よろしいですか？（ダウンロード済みのファイルは残ります）')) return;
-      const { error } = await supabase.from('sites').delete().eq('id', id);
+      const { error } = await supabaseClient.from('sites').delete().eq('id', id);
       if(error){
         alert('削除に失敗しました: ' + error.message);
         return;

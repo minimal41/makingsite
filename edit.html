@@ -593,7 +593,7 @@ const SUPABASE_URL = 'https://bhbmhcnabrdsxgaigcks.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoYm1oY25hYnJkc3hnYWlnY2tzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjUwNjQsImV4cCI6MjA5OTIwMTA2NH0.jnFLGtNHWEeXUipUYBW6GID-CoD1o4a9bfQQPfdlX1Y';
 /* ▲▲▲ ここまで ▲▲▲ */
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentSession = null;
 
 function renderAuthUI(session){
@@ -613,7 +613,7 @@ function renderAuthUI(session){
 document.getElementById('authSendBtn').addEventListener('click', async ()=>{
   const email = document.getElementById('authEmail').value.trim();
   if(!email){ alert('メールアドレスを入力してください'); return; }
-  const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabaseClient.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: window.location.href }
   });
@@ -625,10 +625,10 @@ document.getElementById('authSendBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('authLogoutBtn').addEventListener('click', async ()=>{
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
 });
 
-supabase.auth.onAuthStateChange((_event, session)=>{
+supabaseClient.auth.onAuthStateChange((_event, session)=>{
   currentSession = session;
   renderAuthUI(session);
 });
@@ -2967,9 +2967,9 @@ async function saveSiteToList(title, html){
   let error;
   if(siteId){
     // すでに保存済みのサイトを開いて編集した場合は、同じ行を上書き更新する
-    ({ error } = await supabase.from('sites').update(row).eq('id', siteId));
+    ({ error } = await supabaseClient.from('sites').update(row).eq('id', siteId));
   } else {
-    ({ error } = await supabase.from('sites').insert(row));
+    ({ error } = await supabaseClient.from('sites').insert(row));
   }
 
   if(error){
@@ -3065,7 +3065,7 @@ async function initFromSavedSite(){
 
   if(siteId){
     // ログイン確認が済むまで待つ（ページ読み込み直後はセッション確定前のことがあるため）
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     currentSession = session;
     renderAuthUI(session);
 
@@ -3073,7 +3073,7 @@ async function initFromSavedSite(){
       alert('このサイトを開くにはログインが必要です。上のログインバーからログインしてください。');
     } else {
       try{
-        const { data: entry, error } = await supabase
+        const { data: entry, error } = await supabaseClient
           .from('sites')
           .select('state')
           .eq('id', siteId)
