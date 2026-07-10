@@ -216,12 +216,12 @@ async function render(){
 
   container.innerHTML = `<div class="site-grid">` + sites.map(site => `
     <div class="site-card" data-id="${escapeHTML(site.id)}">
-      <h2>${escapeHTML(site.title || '無題のサイト')}</h2>
+      <h2>${escapeHTML(site.title || '無題のサイト')}${site.html ? '' : ' <span style="font-size:11px;font-weight:400;color:var(--text-dim);border:1px solid var(--line);border-radius:2px;padding:1px 6px;">下書き</span>'}</h2>
       <div class="meta">保存日時: ${formatDate(site.created_at)}</div>
       <div class="actions">
         <a href="edit.html?site=${encodeURIComponent(site.id)}" class="btn primary open-edit-btn">開く</a>
-        <button type="button" class="open-btn">プレビュー</button>
-        <button type="button" class="dl-btn">再ダウンロード</button>
+        <button type="button" class="open-btn" ${site.html ? '' : 'disabled title="まだダウンロードされていません。編集画面で「HTMLをダウンロード」を行うと利用できます。"'}>プレビュー</button>
+        <button type="button" class="dl-btn" ${site.html ? '' : 'disabled title="まだダウンロードされていません。編集画面で「HTMLをダウンロード」を行うと利用できます。"'}>再ダウンロード</button>
         <button type="button" class="del-btn danger">削除</button>
       </div>
     </div>
@@ -232,23 +232,25 @@ async function render(){
     const site = cachedSites.find(s => s.id === id);
     if(!site) return;
 
-    card.querySelector('.open-btn').addEventListener('click', ()=>{
-      const blob = new Blob([site.html], {type:'text/html'});
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    });
+    if(site.html){
+      card.querySelector('.open-btn').addEventListener('click', ()=>{
+        const blob = new Blob([site.html], {type:'text/html'});
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      });
 
-    card.querySelector('.dl-btn').addEventListener('click', ()=>{
-      const blob = new Blob([site.html], {type:'text/html'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = (site.title || 'site') + '.html';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    });
+      card.querySelector('.dl-btn').addEventListener('click', ()=>{
+        const blob = new Blob([site.html], {type:'text/html'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (site.title || 'site') + '.html';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      });
+    }
 
     card.querySelector('.del-btn').addEventListener('click', async ()=>{
       if(!confirm('この一覧からサイトを削除します。よろしいですか？（ダウンロード済みのファイルは残ります）')) return;

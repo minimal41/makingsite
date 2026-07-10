@@ -432,6 +432,7 @@
       </button>
     </div>
     <input type="hidden" id="siteTitle" value="マイサイト">
+    <span id="autosaveStatus" style="font-size:11px;color:var(--text-dim);"></span>
   </div>
   <div class="topbar-actions">
     <button id="undoBtn" title="もとに戻す（Ctrl+Z）" disabled>↶</button>
@@ -595,6 +596,13 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentSession = null;
+let currentSiteId = new URLSearchParams(location.search).get('site');
+let autosaveTimer = null;
+
+function setAutosaveStatus(text){
+  const el = document.getElementById('autosaveStatus');
+  if(el) el.textContent = text;
+}
 
 function renderAuthUI(session){
   const loggedOutEl = document.getElementById('authLoggedOut');
@@ -607,6 +615,7 @@ function renderAuthUI(session){
   } else {
     loggedInEl.style.display = 'none';
     loggedOutEl.style.display = 'flex';
+    setAutosaveStatus('ログインすると自動保存されます');
   }
 }
 
@@ -629,9 +638,59 @@ document.getElementById('authLogoutBtn').addEventListener('click', async ()=>{
 });
 
 supabaseClient.auth.onAuthStateChange((_event, session)=>{
+  const justLoggedIn = !currentSession && session;
   currentSession = session;
   renderAuthUI(session);
+  if(justLoggedIn) scheduleAutosave(true);
 });
+
+/* --- サイトを作っている途中でも、Supabaseへこまめに下書き保存する --- */
+async function persistToCloud(row){
+  if(!currentSession) return { skipped: true };
+  let error;
+  if(currentSiteId){
+    ({ error } = await supabaseClient.from('sites').update(row).eq('id', currentSiteId));
+  } else {
+    const { data, error: insertError } = await supabaseClient
+      .from('sites').insert(row).select('id').single();
+    error = insertError;
+    if(!error && data){
+      currentSiteId = data.id;
+      const url = new URL(location.href);
+      url.searchParams.set('site', currentSiteId);
+      window.history.replaceState(null, '', url);
+    }
+  }
+  return { error };
+}
+
+async function autosaveDraft(){
+  if(!currentSession) return;
+  saveCurrentPageContent();
+  const title = document.getElementById('siteTitle').value || 'マイサイト';
+  const state = captureFullSiteState();
+  setAutosaveStatus('保存中…');
+  const { error, skipped } = await persistToCloud({ title, state });
+  if(skipped) return;
+  if(error){
+    console.warn('自動保存に失敗しました', error);
+    setAutosaveStatus('自動保存に失敗しました');
+  } else {
+    const t = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+    setAutosaveStatus('下書き保存済み ✓ ' + t);
+  }
+}
+
+function scheduleAutosave(immediate){
+  if(!currentSession) return;
+  clearTimeout(autosaveTimer);
+  if(immediate){
+    autosaveDraft();
+    return;
+  }
+  setAutosaveStatus('編集中…');
+  autosaveTimer = setTimeout(autosaveDraft, 1500);
+}
 
 const canvas = document.getElementById('canvas');
 const pageEl = document.querySelector('.page');
@@ -1196,6 +1255,7 @@ function addPage(){
   historyIndex = 0;
   updateUndoRedoButtons();
   renderPageTabs();
+  scheduleAutosave();
 }
 
 function deletePage(id){
@@ -1220,6 +1280,7 @@ function deletePage(id){
     updateUndoRedoButtons();
   }
   renderPageTabs();
+  scheduleAutosave();
 }
 
 function renamePage(id){
@@ -1229,6 +1290,7 @@ function renamePage(id){
   if(name === null) return;
   page.name = name.trim() || page.name;
   renderPageTabs();
+  scheduleAutosave();
 }
 
 pageTabsEl.addEventListener('click', (e)=>{
@@ -1355,6 +1417,7 @@ function pushHistory(){
   history.push(snap);
   historyIndex++;
   updateUndoRedoButtons();
+  scheduleAutosave();
 }
 
 function pushHistoryDebounced(){
@@ -1425,12 +1488,14 @@ function undo(){
   if(historyIndex <= 0) return;
   historyIndex--;
   restoreSnapshot(history[historyIndex]);
+  scheduleAutosave();
 }
 
 function redo(){
   if(historyIndex >= history.length - 1) return;
   historyIndex++;
   restoreSnapshot(history[historyIndex]);
+  scheduleAutosave();
 }
 
 function updateUndoRedoButtons(){
@@ -2957,24 +3022,21 @@ async function saveSiteToList(title, html){
     return;
   }
 
-  const siteId = new URLSearchParams(location.search).get('site');
-  const row = {
+  clearTimeout(autosaveTimer);
+  setAutosaveStatus('保存中…');
+  const { error } = await persistToCloud({
     title: title,
     html: html,
     state: captureFullSiteState()
-  };
-
-  let error;
-  if(siteId){
-    // すでに保存済みのサイトを開いて編集した場合は、同じ行を上書き更新する
-    ({ error } = await supabaseClient.from('sites').update(row).eq('id', siteId));
-  } else {
-    ({ error } = await supabaseClient.from('sites').insert(row));
-  }
+  });
 
   if(error){
     console.warn('サイト一覧への保存に失敗しました', error);
+    setAutosaveStatus('保存に失敗しました');
     alert('ダウンロードは完了しましたが、「サイト一覧」への保存に失敗しました: ' + error.message);
+  } else {
+    const t = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+    setAutosaveStatus('保存済み ✓ ' + t);
   }
 }
 
@@ -3060,10 +3122,7 @@ function getCleanCanvasHTML(){
 }
 
 async function initFromSavedSite(){
-  const params = new URLSearchParams(location.search);
-  const siteId = params.get('site');
-
-  if(siteId){
+  if(currentSiteId){
     // ログイン確認が済むまで待つ（ページ読み込み直後はセッション確定前のことがあるため）
     const { data: { session } } = await supabaseClient.auth.getSession();
     currentSession = session;
@@ -3076,13 +3135,14 @@ async function initFromSavedSite(){
         const { data: entry, error } = await supabaseClient
           .from('sites')
           .select('state')
-          .eq('id', siteId)
+          .eq('id', currentSiteId)
           .single();
 
         if(error){
           alert('サイトの読み込みに失敗しました: ' + error.message);
         } else if(entry && entry.state){
           restoreSnapshot(entry.state);
+          setAutosaveStatus('読み込み済み');
         } else {
           alert('このサイトは以前のバージョンで保存されたため、編集画面では開けません。「プレビュー」または「再ダウンロード」をご利用ください。');
         }
